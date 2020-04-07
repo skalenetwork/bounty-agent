@@ -31,8 +31,7 @@ from web3.logs import DISCARD
 from apscheduler.events import EVENT_JOB_ERROR, EVENT_JOB_EXECUTED
 from apscheduler.schedulers.background import BackgroundScheduler
 from tools import base_agent, db
-from configs import (BLOCK_STEP_SIZE, LONG_DOUBLE_LINE, LONG_LINE, REWARD_DELAY,
-                           MISFIRE_GRACE_TIME)
+from configs import BLOCK_STEP_SIZE, LONG_DOUBLE_LINE, LONG_LINE, REWARD_DELAY, MISFIRE_GRACE_TIME
 from tools.exceptions import IsNotTimeException
 from tools.helper import find_block_for_tx_stamp, run_agent
 
@@ -45,7 +44,7 @@ class BountyCollector(base_agent.BaseAgent):
         start = time.time()
         try:
             pass
-            # self.collect_last_bounty_logs()
+            self.collect_last_bounty_logs()
         except Exception as err:
             self.logger.error(f'Error occurred while checking logs from blockchain: {err} ')
         end = time.time()
@@ -202,13 +201,4 @@ class BountyCollector(base_agent.BaseAgent):
 
 
 if __name__ == '__main__':
-    # run_agent(sys.argv, BountyCollector)
-
-    from tools.helper import init_skale
-    skale = init_skale(0)
-    start = time.time()
-    for node_id in range(23, 24):
-        bounty_agent = BountyCollector(skale, node_id)
-        bounty_agent.get_bounty()
-    end = time.time()
-    print(f'Getting bounties completed. Execution time = {end - start}')
+    run_agent(sys.argv, BountyCollector)
