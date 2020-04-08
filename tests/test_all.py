@@ -26,12 +26,10 @@ from skale.utils.web3_utils import TransactionFailedError
 import bounty_agent
 from tests.constants import N_TEST_NODES
 from tests.prepare_validator import (
-    TEST_BOUNTY_DELAY, TEST_DELTA, TEST_EPOCH, create_dirs, create_set_of_nodes,
-    get_active_ids, init_skale
-)
+    TEST_BOUNTY_DELAY, TEST_DELTA, TEST_EPOCH, create_dirs, create_set_of_nodes, get_active_ids)
 from tools import db
 from tools.config_storage import ConfigStorage
-from tools.helper import check_node_id
+from tools.helper import check_node_id, init_skale
 
 skale = init_skale()
 
