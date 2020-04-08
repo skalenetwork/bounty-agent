@@ -25,15 +25,16 @@ from skale import Skale
 from skale.utils.web3_utils import init_web3
 from skale.wallets import RPCWallet, Web3Wallet
 
-from configs import ENV, LOCAL_WALLET_FILEPATH
+from configs import ENV
 from configs.web3 import ABI_FILEPATH, ENDPOINT
 
 logger = logging.getLogger(__name__)
 
 
 def init_skale(node_id=None):
-    if node_id is None:
-        wallet = RPCWallet(os.environ['TM_URL']) if ENV != 'DEV' else None
+    if node_id is None and ENV != 'DEV':
+        wallet = RPCWallet(os.environ['TM_URL'])
+
     else:
         ETH_PRIVATE_KEY = os.environ['ETH_PRIVATE_KEY']
         web3 = init_web3(ENDPOINT)
@@ -50,13 +51,6 @@ def run_agent(args, agent_class):
     skale = init_skale(node_id)
     agent = agent_class(skale, node_id)
     agent.run()
-
-
-def get_local_wallet_filepath(node_id):
-    if node_id is None:  # production
-        return LOCAL_WALLET_FILEPATH
-    else:  # test
-        return LOCAL_WALLET_FILEPATH + str(node_id)
 
 
 def find_block_for_tx_stamp(skale, tx_stamp, lo=0, hi=None):
