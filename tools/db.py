@@ -18,8 +18,7 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-from peewee import CharField, CompositeKey, DateTimeField, IntegerField, Model, \
-    MySQLDatabase, fn
+from peewee import CharField, CompositeKey, DateTimeField, IntegerField, Model, MySQLDatabase, fn
 
 from configs.db import DB_HOST, DB_NAME, DB_PASSWORD, DB_PORT, DB_USER
 

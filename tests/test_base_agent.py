@@ -19,9 +19,9 @@
 
 import pytest
 
+from configs import NODE_CONFIG_FILEPATH
 from tools.base_agent import BaseAgent
 from tools.config_storage import ConfigStorage
-from configs import NODE_CONFIG_FILEPATH
 from tools.exceptions import NodeNotFoundException
 from tools.helper import init_skale
 
