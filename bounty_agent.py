@@ -26,13 +26,13 @@ import time
 from datetime import datetime, timedelta
 
 import tenacity
-from web3.logs import DISCARD
-
 from apscheduler.events import EVENT_JOB_ERROR, EVENT_JOB_EXECUTED
 from apscheduler.schedulers.background import BackgroundScheduler
+from web3.logs import DISCARD
+
+from configs import BLOCK_STEP_SIZE, LONG_DOUBLE_LINE, LONG_LINE, MISFIRE_GRACE_TIME, REWARD_DELAY
 from tools import base_agent, db
-from configs import BLOCK_STEP_SIZE, LONG_DOUBLE_LINE, LONG_LINE, REWARD_DELAY, MISFIRE_GRACE_TIME
-from tools.exceptions import IsNotTimeException
+from tools.exceptions import IsNotTimeException, TxCallFailedException
 from tools.helper import find_block_for_tx_stamp, run_agent
 
 
@@ -102,23 +102,26 @@ class BountyCollector(base_agent.BaseAgent):
         address = self.skale.wallet.address
         eth_bal_before = self.skale.web3.eth.getBalance(address)
         skl_bal_before = self.skale.token.get_balance(address)
-        self.logger.info(f'ETH balance: {eth_bal_before}')
-        self.logger.info(f'SKL balance: {skl_bal_before}')
+        self.logger.info(f'ETH balance before: {eth_bal_before}')
 
         self.logger.info('--- Getting Bounty ---')
-        res_tx = self.skale.manager.get_bounty(self.id, wait_for=True)
-
-        tx_hash = res_tx.receipt['transactionHash'].hex()
+        try:
+            self.skale.manager.get_bounty(self.id, dry_run=True)
+        except ValueError as err:
+            self.logger.info(f'Tx call failed: {err}')
+            raise TxCallFailedException
+        tx_res = self.skale.manager.get_bounty(self.id, wait_for=True)
+        tx_res.raise_for_status()
+        tx_hash = tx_res.receipt['transactionHash'].hex()
 
         self.logger.info(LONG_DOUBLE_LINE)
         self.logger.info('The bounty was successfully received')
         self.logger.info(f'tx hash: {tx_hash}')
-        self.logger.debug(f'Receipt: {res_tx.receipt}')
+        self.logger.debug(f'Receipt: {tx_res.receipt}')
 
         eth_bal = self.skale.web3.eth.getBalance(address)
         skl_bal = self.skale.token.get_balance(address)
-        self.logger.info(f'ETH balance: {eth_bal}')
-        self.logger.info(f'SKL balance: {skl_bal}')
+        self.logger.info(f'ETH balance after: {eth_bal}')
         self.logger.info(f'ETH difference: {eth_bal - eth_bal_before}')
         try:
             db.save_bounty_stats(tx_hash, eth_bal_before, skl_bal_before, eth_bal, skl_bal)
@@ -126,26 +129,26 @@ class BountyCollector(base_agent.BaseAgent):
             self.logger.error(f'Cannot save getBounty stats. Error: {err}')
 
         h_receipt = self.skale.manager.contract.events.BountyGot().processReceipt(
-            res_tx.receipt, errors=DISCARD)
+            tx_res.receipt, errors=DISCARD)
         self.logger.info(LONG_LINE)
         self.logger.info(h_receipt)
         args = h_receipt[0]['args']
         try:
             db.save_bounty_event(datetime.utcfromtimestamp(args['time']), str(tx_hash),
-                                 res_tx.receipt['blockNumber'], args['nodeIndex'],
+                                 tx_res.receipt['blockNumber'], args['nodeIndex'],
                                  args['bounty'], args['averageDowntime'],
-                                 args['averageLatency'], res_tx.receipt['gasUsed'])
+                                 args['averageLatency'], tx_res.receipt['gasUsed'])
         except Exception as err:
             self.logger.error(f'Cannot save getBounty event. Error: {err}')
 
-        return res_tx.receipt['status']
+        return tx_res.receipt['status']
 
     @tenacity.retry(wait=tenacity.wait_fixed(60),
-                    retry=tenacity.retry_if_exception_type(IsNotTimeException))
+                    retry=tenacity.retry_if_exception_type(IsNotTimeException) | tenacity.
+                    retry_if_exception_type(TxCallFailedException))
     def job(self) -> None:
         """ Periodic job"""
         self.logger.info(f'Job started')
-        utc_now = datetime.utcnow()
 
         try:
             reward_date = self.get_reward_date()
@@ -162,9 +165,7 @@ class BountyCollector(base_agent.BaseAgent):
         if reward_date > block_timestamp:
             self.logger.info('Current block timestamp is less than reward time. Will try in 1 min')
             raise IsNotTimeException(Exception)
-
-        if utc_now >= reward_date:
-            self.get_bounty()
+        self.get_bounty()
 
     def job_listener(self, event):
         if event.exception:

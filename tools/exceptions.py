@@ -28,6 +28,6 @@ class NodeNotFoundException(Exception):
     pass
 
 
-class GetBountyTxFailedException(Exception):
+class TxCallFailedException(Exception):
     """Raised when getBounty transaction failed"""
     pass
