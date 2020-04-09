@@ -50,7 +50,7 @@ class BountyEvent(BaseModel):
     gas_used = IntegerField()
 
     class Meta:
-        db_table = 'bounty_event'
+        table_name = 'bounty_event'
 
 
 class BountyStats(BaseModel):
@@ -61,7 +61,7 @@ class BountyStats(BaseModel):
     skl_balance = CharField()
 
     class Meta:
-        db_table = 'bounty_stats'
+        table_name = 'bounty_stats'
         primary_key = CompositeKey('tx_hash')
 
 
