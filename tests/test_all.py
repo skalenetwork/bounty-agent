@@ -21,7 +21,6 @@ import time
 from datetime import datetime
 
 import pytest
-from skale.utils.web3_utils import TransactionFailedError
 
 import bounty_agent
 from tests.constants import N_TEST_NODES
@@ -29,6 +28,7 @@ from tests.prepare_validator import (
     TEST_BOUNTY_DELAY, TEST_DELTA, TEST_EPOCH, create_dirs, create_set_of_nodes, get_active_ids)
 from tools import db
 from tools.config_storage import ConfigStorage
+from tools.exceptions import TxCallFailedException
 from tools.helper import check_node_id, init_skale
 
 skale = init_skale()
@@ -82,7 +82,7 @@ def test_get_bounty_neg(bounty_collector):
     print(f'ETH balance of account : '
           f'{bounty_collector.skale.web3.eth.getBalance(bounty_collector.skale.wallet.address)}')
 
-    with pytest.raises(TransactionFailedError):
+    with pytest.raises(TxCallFailedException):
         bounty_collector.get_bounty()
 
 

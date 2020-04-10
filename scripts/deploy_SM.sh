@@ -13,8 +13,9 @@ docker run -d --network host --name ganache trufflesuite/ganache-cli:v6.8.1-beta
 export DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
 # Deploy SKALE manager
+docker rm -f sm-depoyer || true
 docker pull skalenetwork/skale-manager:$MANAGER_BRANCH-latest
-docker run \
+docker run --name sm-depoyer\
     -v $DIR/contracts_data:/usr/src/manager/data \
     --network host \
     -e ENDPOINT=http://127.0.0.1:8545 \
