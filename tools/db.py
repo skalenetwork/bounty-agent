@@ -66,7 +66,7 @@ class BountyStats(BaseModel):
 
 @dbhandle.connection_context()
 def save_bounty_event(tx_dt, tx_hash, block_number, my_id, bounty, downtime, latency, gas_used):
-    """ Save bounty events data to database"""
+    """Save bounty events data to database."""
     data = BountyEvent(my_id=my_id,
                        tx_dt=tx_dt,
                        bounty=bounty,
@@ -86,7 +86,7 @@ def save_bounty_stats(
         skl_bal_before,
         eth_bal,
         skl_bal):
-    """ Save bounty receipt data to database"""
+    """Save bounty receipt data to database."""
     data = BountyStats(tx_hash=tx_hash,
                        eth_balance_before=eth_bal_before,
                        skl_balance_before=skl_bal_before,

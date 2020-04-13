@@ -18,8 +18,8 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 """
-Bounty agent runs on every node of SKALE network and sends transactions
-to CS with request to get reward for validation work when it's time to get it
+Bounty agent runs on every node of SKALE network.
+Agent requests to receive available reward for validation work.
 """
 import sys
 import time
@@ -147,7 +147,7 @@ class BountyCollector(base_agent.BaseAgent):
                     retry=tenacity.retry_if_exception_type(IsNotTimeException) | tenacity.
                     retry_if_exception_type(TxCallFailedException))
     def job(self) -> None:
-        """ Periodic job"""
+        """Periodic job."""
         self.logger.info(f'Job started')
 
         try:
@@ -185,7 +185,7 @@ class BountyCollector(base_agent.BaseAgent):
             self.scheduler.print_jobs()
 
     def run(self) -> None:
-        """Starts agent"""
+        """Starts agent."""
         self.logger.debug(f'{self.agent_name} started')
         reward_date = self.get_reward_date()
         self.logger.debug(f'Reward date on agent\'s start: {reward_date}')
