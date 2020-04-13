@@ -72,7 +72,8 @@ _in process_
 -   [SKALE Network Website](https://skale.network)
 -   [SKALE Network Twitter](https://twitter.com/SkaleNetwork)
 -   [SKALE Network Blog](https://skale.network/blog)  
-    Learn more about the SKALE community over on [Discord](http://skale.chat).
+
+Learn more about the SKALE community over on [Discord](http://skale.chat).
 
 ## Contributing
 
