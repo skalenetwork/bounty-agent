@@ -37,15 +37,16 @@ def setup_validator(skale):
         wait_for=True
     )
     accelerate_skale_manager(skale)
+    # accelerate_skale_manager(skale, 20 * 60, 3 * 60)
 
 
-def accelerate_skale_manager(skale):
+def accelerate_skale_manager(skale, test_epoch=TEST_EPOCH, test_delta=TEST_DELTA):
 
     reward_period = skale.constants_holder.get_reward_period()
     delta_period = skale.constants_holder.get_delta_period()
     print(f'Existing times for SKALE Manager: {reward_period}, {delta_period}')
 
-    tx_res = skale.constants_holder.set_periods(TEST_EPOCH, TEST_DELTA, wait_for=True)
+    tx_res = skale.constants_holder.set_periods(test_epoch, test_delta, wait_for=True)
     assert tx_res.receipt['status'] == 1
     reward_period = skale.constants_holder.get_reward_period()
     delta_period = skale.constants_holder.get_delta_period()
@@ -80,7 +81,10 @@ def create_node(skale, node_id):
                                        'node_' + str(node_id), wait_for=True)
 
     if res_tx.receipt['status'] == 1:
-        print(f'Node with ID = {node_id} was successfully created')
+        print(f'Node with ID={node_id} was successfully created')
+    else:
+        print(f'Failed to create - Node ID={node_id}')
+        print(res_tx.receipt)
 
 
 def get_active_ids(skale):
