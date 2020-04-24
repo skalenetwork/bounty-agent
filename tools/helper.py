@@ -34,11 +34,10 @@ logger = logging.getLogger(__name__)
 def init_skale(node_id=None):
     if node_id is None and ENV != 'DEV':
         wallet = RPCWallet(os.environ['TM_URL'])
-
     else:
-        ETH_PRIVATE_KEY = os.environ['ETH_PRIVATE_KEY']
+        eth_private_key = os.environ['ETH_PRIVATE_KEY']
         web3 = init_web3(ENDPOINT)
-        wallet = Web3Wallet(ETH_PRIVATE_KEY, web3)
+        wallet = Web3Wallet(eth_private_key, web3)
     return Skale(ENDPOINT, ABI_FILEPATH, wallet)
 
 
