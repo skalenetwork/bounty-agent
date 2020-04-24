@@ -29,17 +29,33 @@ import tenacity
 from apscheduler.events import EVENT_JOB_ERROR, EVENT_JOB_EXECUTED
 from apscheduler.schedulers.background import BackgroundScheduler
 from web3.logs import DISCARD
-
-from configs import BLOCK_STEP_SIZE, LONG_DOUBLE_LINE, LONG_LINE, MISFIRE_GRACE_TIME, REWARD_DELAY
-from tools import base_agent, db
+from configs import (BLOCK_STEP_SIZE, LONG_DOUBLE_LINE, LONG_LINE, MISFIRE_GRACE_TIME, REWARD_DELAY,
+                     NODE_CONFIG_FILEPATH)
+from tools import db
 from tools.exceptions import IsNotTimeException, TxCallFailedException
-from tools.helper import run_agent
+from tools.helper import init_skale, get_id_from_config, check_if_node_is_registered
+from tools.logger import init_agent_logger
+import logging
 
 
-class BountyCollector(base_agent.BaseAgent):
+class BountyCollector:
 
     def __init__(self, skale, node_id=None):
-        super().__init__(skale, node_id)
+        self.agent_name = self.__class__.__name__.lower()
+        init_agent_logger(self.agent_name, node_id)
+        self.logger = logging.getLogger(self.agent_name)
+
+        self.logger.info(f'Initialization of {self.agent_name} ...')
+        if node_id is None:
+            self.id = get_id_from_config(NODE_CONFIG_FILEPATH)
+            self.is_test_mode = False
+        else:
+            self.id = node_id
+            self.is_test_mode = True
+        self.skale = skale
+
+        check_if_node_is_registered(self.skale, self.id)
+
         self.logger.info('Start checking logs on blockchain')
         start = time.time()
         try:
@@ -53,6 +69,7 @@ class BountyCollector(base_agent.BaseAgent):
         self.scheduler = BackgroundScheduler(
             timezone='UTC',
             job_defaults={'coalesce': True, 'misfire_grace_time': MISFIRE_GRACE_TIME})
+        self.logger.info(f'Initialization of {self.agent_name} is completed. Node ID = {self.id}')
 
     def get_reward_date(self):
         reward_period = self.skale.constants_holder.get_reward_period()
@@ -203,4 +220,11 @@ class BountyCollector(base_agent.BaseAgent):
 
 
 if __name__ == '__main__':
-    run_agent(sys.argv, BountyCollector)
+    if len(sys.argv) > 1 and sys.argv[1].isdecimal():
+        node_id = int(sys.argv[1])
+    else:
+        node_id = None
+
+    skale = init_skale(node_id)
+    bounty_agent = BountyCollector(skale, node_id)
+    bounty_agent.run()

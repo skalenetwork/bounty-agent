@@ -19,13 +19,14 @@
 
 import logging
 import os
-
+import tenacity
 from skale import Skale
 from skale.utils.web3_utils import init_web3
 from skale.wallets import RPCWallet, Web3Wallet
-
+import json
 from configs import ENV
 from configs.web3 import ABI_FILEPATH, ENDPOINT
+from tools.exceptions import NodeNotFoundException
 
 logger = logging.getLogger(__name__)
 
@@ -40,16 +41,30 @@ def init_skale(node_id=None):
     return Skale(ENDPOINT, ABI_FILEPATH, wallet)
 
 
-def run_agent(args, agent_class):
-    if len(args) > 1 and args[1].isdecimal():
-        node_id = int(args[1])
-    else:
-        node_id = None
-
-    skale = init_skale(node_id)
-    agent = agent_class(skale, node_id)
-    agent.run()
-
-
 def check_node_id(skale, node_id):
     return node_id in skale.nodes_data.get_active_node_ids()
+
+
+def check_if_node_is_registered(skale, node_id):
+    if node_id not in skale.nodes_data.get_active_node_ids():
+        err_msg = f'There is no Node with ID = {node_id} in SKALE manager'
+        logger.error(err_msg)
+        raise NodeNotFoundException(err_msg)
+    return True
+
+
+@tenacity.retry(
+    wait=tenacity.wait_fixed(20),
+    retry=tenacity.retry_if_exception_type(KeyError) | tenacity.retry_if_exception_type(
+        FileNotFoundError))
+def get_id_from_config(node_config_filepath) -> int:
+    """Gets node ID from config file for agent initialization."""
+    try:
+        logger.debug('Reading node id from config file...')
+        with open(node_config_filepath) as json_file:
+            data = json.load(json_file)
+        return data['node_id']
+    except (FileNotFoundError, KeyError) as err:
+        logger.warning(
+            f'Cannot read a node id from config file - is the node already registered?')
+        raise err
