@@ -19,7 +19,6 @@
 
 import logging
 import os
-from datetime import datetime
 
 from skale import Skale
 from skale.utils.web3_utils import init_web3
@@ -50,26 +49,6 @@ def run_agent(args, agent_class):
     skale = init_skale(node_id)
     agent = agent_class(skale, node_id)
     agent.run()
-
-
-def find_block_for_tx_stamp(skale, tx_stamp, lo=0, hi=None):
-    """Return nearest block number to given transaction timestamp."""
-    count = 0
-    if hi is None:
-        hi = skale.web3.eth.blockNumber
-    while lo < hi:
-        mid = (lo + hi) // 2
-        block_data = skale.web3.eth.getBlock(mid)
-        midval = datetime.utcfromtimestamp(block_data['timestamp'])
-        if midval < tx_stamp:
-            lo = mid + 1
-        elif midval > tx_stamp:
-            hi = mid
-        else:
-            return mid
-        count += 1
-    print(f'Number of iterations = {count}')
-    return lo
 
 
 def check_node_id(skale, node_id):

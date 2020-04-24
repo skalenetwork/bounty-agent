@@ -33,7 +33,7 @@ from web3.logs import DISCARD
 from configs import BLOCK_STEP_SIZE, LONG_DOUBLE_LINE, LONG_LINE, MISFIRE_GRACE_TIME, REWARD_DELAY
 from tools import base_agent, db
 from tools.exceptions import IsNotTimeException, TxCallFailedException
-from tools.helper import find_block_for_tx_stamp, run_agent
+from tools.helper import run_agent
 
 
 class BountyCollector(base_agent.BaseAgent):
@@ -49,6 +49,7 @@ class BountyCollector(base_agent.BaseAgent):
             self.logger.error(f'Error occurred while checking logs from blockchain: {err} ')
         end = time.time()
         self.logger.info(f'Check completed. Execution time = {end - start}')
+        print(f'Check completed. Execution time = {end - start}')
         self.scheduler = BackgroundScheduler(
             timezone='UTC',
             job_defaults={'coalesce': True, 'misfire_grace_time': MISFIRE_GRACE_TIME})
@@ -60,11 +61,11 @@ class BountyCollector(base_agent.BaseAgent):
         return datetime.utcfromtimestamp(reward_date) + timedelta(seconds=REWARD_DELAY)
 
     def collect_last_bounty_logs(self):
-        start_date = datetime.utcfromtimestamp(self.skale.nodes_data.get(self.id)['start_date'])
+        start_block_number = self.skale.nodes_data.get(self.id)['start_date']  # TODO: start_block
+        print(f'start block_number = {start_block_number}')
+
         last_block_number_in_db = db.get_bounty_max_block_number()
-        if last_block_number_in_db is None:
-            start_block_number = find_block_for_tx_stamp(self.skale, start_date)
-        else:
+        if last_block_number_in_db is not None:
             start_block_number = last_block_number_in_db + 1
         count = 0
         while True:
