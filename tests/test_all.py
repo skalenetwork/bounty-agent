@@ -29,7 +29,7 @@ from tests.prepare_validator import (
 from tools import db
 from tools.config_storage import ConfigStorage
 from tools.exceptions import TxCallFailedException
-from tools.helper import check_node_id, init_skale
+from tools.helper import check_node_id, init_skale, get_id_from_config
 
 skale = init_skale()
 
@@ -145,5 +145,5 @@ def test_get_id_from_config(bounty_collector):
     node_index = 1
     config_node = ConfigStorage(config_file_name)
     config_node.update({'node_id': node_index})
-    node_id = bounty_collector.get_id_from_config(config_file_name)
+    node_id = get_id_from_config(config_file_name)
     assert node_id == node_index
