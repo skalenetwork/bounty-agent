@@ -32,12 +32,7 @@ def setup_validator(skale):
         create_validator(skale)
         enable_validator(skale)
     set_test_msr(skale, msr=0)
-    skale.validator_service.link_node_address(
-        node_address=skale.wallet.address,
-        wait_for=True
-    )
     accelerate_skale_manager(skale)
-    # accelerate_skale_manager(skale, 20 * 60, 3 * 60)
 
 
 def accelerate_skale_manager(skale, test_epoch=TEST_EPOCH, test_delta=TEST_DELTA):
