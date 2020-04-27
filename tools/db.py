@@ -81,13 +81,13 @@ def save_bounty_event(tx_dt, tx_hash, block_number, my_id, bounty, downtime, lat
 
 @dbhandle.connection_context()
 def clear_all_bounty_receipts():
-    nrows = BountyStats.delete().execute()
+    nrows = BountyEvent.delete().execute()
     print(f'{nrows} records deleted')
 
 
 @dbhandle.connection_context()
 def get_count_of_bounty_receipt_records():
-    return BountyStats.select().count()
+    return BountyEvent.select().count()
 
 
 @dbhandle.connection_context()
