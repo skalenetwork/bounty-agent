@@ -33,7 +33,9 @@ from configs import (BLOCK_STEP_SIZE, LONG_DOUBLE_LINE, LONG_LINE, MISFIRE_GRACE
                      NODE_CONFIG_FILEPATH)
 from tools import db
 from tools.exceptions import IsNotTimeException, TxCallFailedException
-from tools.helper import init_skale, get_id_from_config, check_if_node_is_registered
+from tools.helper import (
+    call_tx_retry, check_if_node_is_registered, get_id_from_config, init_skale, regular_call_retry,
+    send_tx_retry)
 from tools.logger import init_agent_logger
 import logging
 
@@ -123,12 +125,9 @@ class BountyCollector:
         self.logger.info(f'ETH balance before: {eth_bal_before}')
 
         self.logger.info('--- Getting Bounty ---')
-        try:
-            self.skale.manager.get_bounty(self.id, dry_run=True)
-        except ValueError as err:
-            self.logger.info(f'Tx call failed: {err}')
-            raise TxCallFailedException
-        tx_res = self.skale.manager.get_bounty(self.id, wait_for=True)
+
+        call_tx_retry.call(self.skale.manager.get_bounty, self.id, dry_run=True)
+        tx_res = send_tx_retry.call(self.skale.manager.get_bounty, self.id, wait_for=True)
         tx_res.raise_for_status()
         tx_hash = tx_res.receipt['transactionHash'].hex()
 
@@ -176,7 +175,7 @@ class BountyCollector:
             raise
 
         last_block_number = self.skale.web3.eth.blockNumber
-        block_data = self.skale.web3.eth.getBlock(last_block_number)
+        block_data = regular_call_retry.call(self.skale.web3.eth.getBlock, last_block_number)
         block_timestamp = datetime.utcfromtimestamp(block_data['timestamp'])
         self.logger.info(f'Reward date: {reward_date}')
         self.logger.info(f'Timestamp: {block_timestamp}')
