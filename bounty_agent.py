@@ -120,7 +120,6 @@ class BountyCollector:
     def get_bounty(self):
         address = self.skale.wallet.address
         eth_bal_before = self.skale.web3.eth.getBalance(address)
-        skl_bal_before = self.skale.token.get_balance(address)
         self.logger.info(f'ETH balance before: {eth_bal_before}')
 
         self.logger.info('--- Getting Bounty ---')
@@ -136,13 +135,8 @@ class BountyCollector:
         self.logger.debug(f'Receipt: {tx_res.receipt}')
 
         eth_bal = self.skale.web3.eth.getBalance(address)
-        skl_bal = self.skale.token.get_balance(address)
         self.logger.info(f'ETH balance after: {eth_bal}')
         self.logger.info(f'ETH difference: {eth_bal - eth_bal_before}')
-        try:
-            db.save_bounty_stats(tx_hash, eth_bal_before, skl_bal_before, eth_bal, skl_bal)
-        except Exception as err:
-            self.logger.error(f'Cannot save getBounty stats. Error: {err}')
 
         h_receipt = self.skale.manager.contract.events.BountyGot().processReceipt(
             tx_res.receipt, errors=DISCARD)

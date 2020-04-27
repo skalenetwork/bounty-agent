@@ -80,23 +80,6 @@ def save_bounty_event(tx_dt, tx_hash, block_number, my_id, bounty, downtime, lat
 
 
 @dbhandle.connection_context()
-def save_bounty_stats(
-        tx_hash,
-        eth_bal_before,
-        skl_bal_before,
-        eth_bal,
-        skl_bal):
-    """Save bounty receipt data to database."""
-    data = BountyStats(tx_hash=tx_hash,
-                       eth_balance_before=eth_bal_before,
-                       skl_balance_before=skl_bal_before,
-                       eth_balance=eth_bal,
-                       skl_balance=skl_bal
-                       )
-    data.save(force_insert=True)
-
-
-@dbhandle.connection_context()
 def clear_all_bounty_receipts():
     nrows = BountyStats.delete().execute()
     print(f'{nrows} records deleted')
