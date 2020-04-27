@@ -61,7 +61,6 @@ class BountyCollector:
         self.logger.info('Start checking logs on blockchain')
         start = time.time()
         try:
-            pass
             self.collect_last_bounty_logs()
         except Exception as err:
             self.logger.error(f'Error occurred while checking logs from blockchain: {err} ')
