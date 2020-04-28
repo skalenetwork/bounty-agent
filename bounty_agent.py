@@ -29,7 +29,7 @@ import tenacity
 from apscheduler.events import EVENT_JOB_ERROR, EVENT_JOB_EXECUTED
 from apscheduler.schedulers.background import BackgroundScheduler
 from web3.logs import DISCARD
-from configs import (BLOCK_STEP_SIZE, LONG_DOUBLE_LINE, LONG_LINE, MISFIRE_GRACE_TIME, REWARD_DELAY,
+from configs import (BLOCK_STEP_SIZE, LONG_DOUBLE_LINE, LONG_LINE, MISFIRE_GRACE_TIME,
                      NODE_CONFIG_FILEPATH)
 from tools import db
 from tools.exceptions import IsNotTimeException, TxCallFailedException
@@ -76,7 +76,7 @@ class BountyCollector:
         reward_period = self.skale.constants_holder.get_reward_period()
         reward_date = self.skale.nodes_data.get(
             self.id)['last_reward_date'] + reward_period
-        return datetime.utcfromtimestamp(reward_date) + timedelta(seconds=REWARD_DELAY)
+        return datetime.utcfromtimestamp(reward_date)
 
     def collect_last_bounty_logs(self):
         start_block_number = self.skale.nodes_data.get(self.id)['start_date']  # TODO: start_block
