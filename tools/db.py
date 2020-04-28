@@ -18,14 +18,14 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-from peewee import CharField, CompositeKey, DateTimeField, IntegerField, Model, MySQLDatabase, fn
+from peewee import CharField, DateTimeField, IntegerField, Model, MySQLDatabase, fn
 
 from configs.db import DB_HOST, DB_NAME, DB_PASSWORD, DB_PORT, DB_USER
 
 print(f'DB HOST = {DB_HOST}')
 
 
-dbhandle = MySQLDatabase(
+db = MySQLDatabase(
     DB_NAME, user=DB_USER,
     password=DB_PASSWORD,
     host=DB_HOST,
@@ -35,7 +35,7 @@ dbhandle = MySQLDatabase(
 
 class BaseModel(Model):
     class Meta:
-        database = dbhandle
+        database = db
 
 
 class BountyEvent(BaseModel):
@@ -52,19 +52,7 @@ class BountyEvent(BaseModel):
         table_name = 'bounty_event'
 
 
-class BountyStats(BaseModel):
-    tx_hash = CharField()
-    eth_balance_before = CharField()
-    eth_balance = CharField()
-    skl_balance_before = CharField()
-    skl_balance = CharField()
-
-    class Meta:
-        table_name = 'bounty_stats'
-        primary_key = CompositeKey('tx_hash')
-
-
-@dbhandle.connection_context()
+@db.connection_context()
 def save_bounty_event(tx_dt, tx_hash, block_number, my_id, bounty, downtime, latency, gas_used):
     """Save bounty events data to database."""
     data = BountyEvent(my_id=my_id,
@@ -79,17 +67,17 @@ def save_bounty_event(tx_dt, tx_hash, block_number, my_id, bounty, downtime, lat
     data.save()
 
 
-@dbhandle.connection_context()
+@db.connection_context()
 def clear_all_bounty_receipts():
     nrows = BountyEvent.delete().execute()
     print(f'{nrows} records deleted')
 
 
-@dbhandle.connection_context()
+@db.connection_context()
 def get_count_of_bounty_receipt_records():
     return BountyEvent.select().count()
 
 
-@dbhandle.connection_context()
+@db.connection_context()
 def get_bounty_max_block_number():
     return BountyEvent.select(fn.MAX(BountyEvent.block_number)).scalar()
