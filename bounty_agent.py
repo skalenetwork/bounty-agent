@@ -120,13 +120,12 @@ class BountyCollector:
     def get_bounty(self):
         address = self.skale.wallet.address
         eth_bal_before = self.skale.web3.eth.getBalance(address)
-        self.logger.info(f'ETH balance before: {eth_bal_before}')
-
-        self.logger.info('--- Getting Bounty ---')
+        self.logger.debug(f'ETH balance before tx: {eth_bal_before}')
 
         call_tx_retry.call(self.skale.manager.get_bounty, self.id, dry_run=True)
         tx_res = send_tx_retry.call(self.skale.manager.get_bounty, self.id, wait_for=True)
         tx_res.raise_for_status()
+
         tx_hash = tx_res.receipt['transactionHash'].hex()
 
         self.logger.info(LONG_DOUBLE_LINE)
@@ -135,8 +134,7 @@ class BountyCollector:
         self.logger.debug(f'Receipt: {tx_res.receipt}')
 
         eth_bal = self.skale.web3.eth.getBalance(address)
-        self.logger.info(f'ETH balance after: {eth_bal}')
-        self.logger.info(f'ETH difference: {eth_bal - eth_bal_before}')
+        self.logger.info(f'ETH spend: {eth_bal_before - eth_bal}')
 
         h_receipt = self.skale.manager.contract.events.BountyGot().processReceipt(
             tx_res.receipt, errors=DISCARD)
@@ -158,7 +156,7 @@ class BountyCollector:
                     retry_if_exception_type(TxCallFailedException))
     def job(self) -> None:
         """Periodic job."""
-        self.logger.info(f'Job started')
+        self.logger.debug(f'Job started')
 
         try:
             reward_date = self.get_reward_date()
