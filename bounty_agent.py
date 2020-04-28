@@ -73,9 +73,9 @@ class BountyCollector:
         self.logger.info(f'Initialization of {self.agent_name} is completed. Node ID = {self.id}')
 
     def get_reward_date(self):
-        reward_period = self.skale.constants_holder.get_reward_period()
-        reward_date = self.skale.nodes_data.get(
-            self.id)['last_reward_date'] + reward_period
+        reward_period = regular_call_retry(self.skale.constants_holder.get_reward_period)
+        node_info = regular_call_retry(self.skale.nodes_data.get, self.id)
+        reward_date = node_info['last_reward_date'] + reward_period
         return datetime.utcfromtimestamp(reward_date)
 
     def collect_last_bounty_logs(self):
