@@ -1,4 +1,4 @@
-skale-py==3.4.dev5
+skale-py==3.5.dev1
 docker==4.2.0
 schedule==0.6.0
 tenacity==6.1.0

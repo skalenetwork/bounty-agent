@@ -36,13 +36,3 @@ CREATE TABLE `bounty_event` (
   `stamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=4196 DEFAULT CHARSET=utf8;
-
-CREATE TABLE `bounty_stats` (
-  `tx_hash` CHAR(66) NOT NULL,
-  `eth_balance_before` VARCHAR(28) NULL,
-  `skl_balance_before` VARCHAR(28) NULL,
-  `eth_balance` VARCHAR(28) NULL,
-  `skl_balance` VARCHAR(28) NULL,
-  PRIMARY KEY (`tx_hash`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
