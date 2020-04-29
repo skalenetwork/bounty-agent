@@ -79,9 +79,7 @@ class BountyCollector:
         return datetime.utcfromtimestamp(reward_date)
 
     def collect_last_bounty_logs(self):
-        start_block_number = self.skale.nodes_data.get(self.id)['start_date']  # TODO: start_block
-        print(f'start block_number = {start_block_number}')
-
+        start_block_number = self.skale.nodes_data.get(self.id)['start_block']
         last_block_number_in_db = db.get_bounty_max_block_number()
         if last_block_number_in_db is not None:
             start_block_number = last_block_number_in_db + 1
