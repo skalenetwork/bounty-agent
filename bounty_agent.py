@@ -29,7 +29,7 @@ import tenacity
 from apscheduler.events import EVENT_JOB_ERROR, EVENT_JOB_EXECUTED
 from apscheduler.schedulers.background import BackgroundScheduler
 from web3.logs import DISCARD
-from configs import (BLOCK_STEP_SIZE, LONG_DOUBLE_LINE, LONG_LINE, MISFIRE_GRACE_TIME,
+from configs import (BLOCK_STEP_SIZE, LONG_LINE, MISFIRE_GRACE_TIME,
                      NODE_CONFIG_FILEPATH)
 from tools import db
 from tools.exceptions import IsNotTimeException, TxCallFailedException
@@ -58,15 +58,15 @@ class BountyCollector:
 
         check_if_node_is_registered(self.skale, self.id)
 
-        self.logger.info('Start checking logs on blockchain')
+        self.logger.info('Check logs on blockchain')
         start = time.time()
         try:
             self.collect_last_bounty_logs()
         except Exception as err:
             self.logger.error(f'Error occurred while checking logs from blockchain: {err} ')
+            # TODO: notify SKALE Admin
         end = time.time()
         self.logger.info(f'Check completed. Execution time = {end - start}')
-        print(f'Check completed. Execution time = {end - start}')
         self.scheduler = BackgroundScheduler(
             timezone='UTC',
             job_defaults={'coalesce': True, 'misfire_grace_time': MISFIRE_GRACE_TIME})
@@ -110,7 +110,7 @@ class BountyCollector:
                                      args['averageDowntime'], args['averageLatency'],
                                      gas_used)
                 count += 1
-            self.logger.debug(f'count = {count}')
+            self.logger.debug(f'Iterations count = {count}')
             start_block_number = start_block_number + BLOCK_STEP_SIZE
             if end_chunk_block_number >= last_block_number:
                 break
@@ -118,25 +118,22 @@ class BountyCollector:
     def get_bounty(self):
         address = self.skale.wallet.address
         eth_bal_before = self.skale.web3.eth.getBalance(address)
-        self.logger.debug(f'ETH balance before tx: {eth_bal_before}')
+        self.logger.info(f'ETH balance: {self.skale.web3.fromWei(eth_bal_before, "ether")}')
 
         call_tx_retry.call(self.skale.manager.get_bounty, self.id, dry_run=True)
         tx_res = send_tx_retry.call(self.skale.manager.get_bounty, self.id, wait_for=True)
+        self.logger.debug(f'Receipt: {tx_res.receipt}')
         tx_res.raise_for_status()
 
         tx_hash = tx_res.receipt['transactionHash'].hex()
-
-        self.logger.info(LONG_DOUBLE_LINE)
+        self.logger.info(LONG_LINE)
         self.logger.info('The bounty was successfully received')
-        self.logger.info(f'tx hash: {tx_hash}')
-        self.logger.debug(f'Receipt: {tx_res.receipt}')
 
         eth_bal = self.skale.web3.eth.getBalance(address)
-        self.logger.info(f'ETH spend: {eth_bal_before - eth_bal}')
+        self.logger.debug(f'ETH spend: {eth_bal_before - eth_bal}')
 
         h_receipt = self.skale.manager.contract.events.BountyGot().processReceipt(
             tx_res.receipt, errors=DISCARD)
-        self.logger.info(LONG_LINE)
         self.logger.info(h_receipt)
         args = h_receipt[0]['args']
         try:
@@ -145,7 +142,7 @@ class BountyCollector:
                                  args['bounty'], args['averageDowntime'],
                                  args['averageLatency'], tx_res.receipt['gasUsed'])
         except Exception as err:
-            self.logger.error(f'Cannot save getBounty event. Error: {err}')
+            self.logger.error(f'Cannot save getBounty event data to db. Error: {err}')
 
         return tx_res.receipt['status']
 
@@ -159,15 +156,15 @@ class BountyCollector:
         try:
             reward_date = self.get_reward_date()
         except Exception as err:
-            self.logger.error(f'Cannot get reward date: {err}')
-            # TODO: notify Skale Admin
+            self.logger.error(f'Cannot get reward date from SKALE Manager: {err}')
+            # TODO: notify SKALE Admin
             raise
 
         last_block_number = self.skale.web3.eth.blockNumber
         block_data = regular_call_retry.call(self.skale.web3.eth.getBlock, last_block_number)
         block_timestamp = datetime.utcfromtimestamp(block_data['timestamp'])
-        self.logger.info(f'Reward date: {reward_date}')
-        self.logger.info(f'Timestamp: {block_timestamp}')
+        self.logger.info(f'Current reward time: {reward_date}')
+        self.logger.info(f'Block timestamp now: {block_timestamp}')
         if reward_date > block_timestamp:
             self.logger.info('Current block timestamp is less than reward time. Will try in 1 min')
             raise IsNotTimeException(Exception)
@@ -185,14 +182,13 @@ class BountyCollector:
             self.logger.debug(f'Reward date after job: {reward_date}')
             utc_now = datetime.utcnow()
             if utc_now > reward_date:
-                self.logger.debug('Changing reward date for now')
+                self.logger.debug('Changing reward time by current time')
                 reward_date = utc_now
             self.scheduler.add_job(self.job, 'date', run_date=reward_date)
             self.scheduler.print_jobs()
 
     def run(self) -> None:
         """Starts agent."""
-        self.logger.debug(f'{self.agent_name} started')
         reward_date = self.get_reward_date()
         self.logger.debug(f'Reward date on agent\'s start: {reward_date}')
         utc_now = datetime.utcnow()

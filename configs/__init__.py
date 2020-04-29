@@ -3,7 +3,6 @@ import os
 ENV = os.environ.get('ENV')
 
 LONG_LINE = '-' * 100
-LONG_DOUBLE_LINE = '=' * 100
 
 SKALE_VOLUME_PATH = '/skale_vol'
 NODE_DATA_PATH = '/skale_node_data'
