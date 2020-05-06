@@ -28,8 +28,7 @@ from tests.prepare_validator import (
     TEST_BOUNTY_DELAY, TEST_DELTA, TEST_EPOCH, create_dirs, create_set_of_nodes, get_active_ids)
 from tools import db
 from tools.config_storage import ConfigStorage
-from tools.exceptions import TxCallFailedException
-from tools.helper import check_node_id, init_skale
+from tools.helper import check_node_id, init_skale, get_id_from_config
 
 skale = init_skale()
 
@@ -82,7 +81,7 @@ def test_get_bounty_neg(bounty_collector):
     print(f'ETH balance of account : '
           f'{bounty_collector.skale.web3.eth.getBalance(bounty_collector.skale.wallet.address)}')
 
-    with pytest.raises(TxCallFailedException):
+    with pytest.raises(ValueError):
         bounty_collector.get_bounty()
 
 
@@ -132,10 +131,10 @@ def test_get_bounty_second_time(bounty_collector):
     print(f'ETH balance of account : '
           f'{bounty_collector.skale.web3.eth.getBalance(bounty_collector.skale.wallet.address)}')
 
-    db.clear_all_bounty_receipts()
     bounty_collector2 = bounty_agent.BountyCollector(skale, cur_node_id)
     print(f'\nSleep for {TEST_EPOCH} sec')
     time.sleep(TEST_EPOCH + TEST_BOUNTY_DELAY)  # plus delay to wait next block after end of epoch
+    db.clear_all_bounty_receipts()
     bounty_collector2.job()
     assert db.get_count_of_bounty_receipt_records() == 1
 
@@ -145,5 +144,5 @@ def test_get_id_from_config(bounty_collector):
     node_index = 1
     config_node = ConfigStorage(config_file_name)
     config_node.update({'node_id': node_index})
-    node_id = bounty_collector.get_id_from_config(config_file_name)
+    node_id = get_id_from_config(config_file_name)
     assert node_id == node_index
