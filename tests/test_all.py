@@ -77,10 +77,6 @@ def test_get_bounty_neg(bounty_collector):
     print(f'Reward date: {reward_date}')
     print(f'Timestamp: {block_timestamp}')
 
-    print(f'--- Gas Price = {bounty_collector.skale.web3.eth.gasPrice}')
-    print(f'ETH balance of account : '
-          f'{bounty_collector.skale.web3.eth.getBalance(bounty_collector.skale.wallet.address)}')
-
     with pytest.raises(ValueError):
         bounty_collector.get_bounty()
 
@@ -93,28 +89,23 @@ def test_bounty_job_saves_data(bounty_collector):
     reward_date = bounty_collector.get_reward_date()
     print(f'Reward date: {reward_date}')
     print(f'Timestamp: {block_timestamp}')
-
-    print(f'--- Gas Price = {bounty_collector.skale.web3.eth.gasPrice}')
-    print(f'ETH balance of account : '
-          f'{bounty_collector.skale.web3.eth.getBalance(bounty_collector.skale.wallet.address)}')
-
     print(f'\nSleep for {TEST_DELTA} sec')
     time.sleep(TEST_DELTA + TEST_BOUNTY_DELAY)  # plus delay to wait next block after end of epoch
+
     db.clear_all_bounty_receipts()
     bounty_collector.job()
+
     assert db.get_count_of_bounty_receipt_records() == 1
 
 
 @pytest.mark.skip(reason="skip to save time")
 def test_get_bounty_pos(bounty_collector):
-    print(f'--- Gas Price = {bounty_collector.skale.web3.eth.gasPrice}')
-    print(f'ETH balance of account : '
-          f'{bounty_collector.skale.web3.eth.getBalance(bounty_collector.skale.wallet.address)}')
-
     print(f'\nSleep for {TEST_EPOCH} sec')
     time.sleep(TEST_EPOCH)
+
     db.clear_all_bounty_receipts()
     status = bounty_collector.get_bounty()
+
     assert status == 1
     assert db.get_count_of_bounty_receipt_records() == 1
 
@@ -126,10 +117,6 @@ def test_get_bounty_second_time(bounty_collector):
     reward_date = bounty_collector.get_reward_date()
     print(f'Reward date: {reward_date}')
     print(f'Timestamp: {block_timestamp}')
-
-    print(f'--- Gas Price = {bounty_collector.skale.web3.eth.gasPrice}')
-    print(f'ETH balance of account : '
-          f'{bounty_collector.skale.web3.eth.getBalance(bounty_collector.skale.wallet.address)}')
 
     bounty_collector2 = bounty_agent.BountyCollector(skale, cur_node_id)
     print(f'\nSleep for {TEST_EPOCH} sec')
