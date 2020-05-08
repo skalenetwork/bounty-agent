@@ -30,10 +30,3 @@ class NodeNotFoundException(Exception):
     """Raised when Node ID doesn't exist in SKALE Manager."""
 
     pass
-
-
-class TxCallFailedException(Exception):
-
-    """Raised when getBounty transaction failed."""
-
-    pass

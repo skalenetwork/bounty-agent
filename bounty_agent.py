@@ -32,10 +32,9 @@ from web3.logs import DISCARD
 from configs import (BLOCK_STEP_SIZE, LONG_LINE, MISFIRE_GRACE_TIME,
                      NODE_CONFIG_FILEPATH)
 from tools import db
-from tools.exceptions import IsNotTimeException, TxCallFailedException
-from tools.helper import (
-    call_tx_retry, check_if_node_is_registered, get_id_from_config, init_skale, regular_call_retry,
-    send_tx_retry)
+from tools.exceptions import IsNotTimeException
+from tools.helper import (check_if_node_is_registered, get_id_from_config, init_skale,
+                          call_retry)
 from tools.logger import init_agent_logger
 import logging
 
@@ -73,8 +72,8 @@ class BountyCollector:
         self.logger.info(f'Initialization of {self.agent_name} is completed. Node ID = {self.id}')
 
     def get_reward_date(self):
-        reward_period = regular_call_retry(self.skale.constants_holder.get_reward_period)
-        node_info = regular_call_retry(self.skale.nodes_data.get, self.id)
+        reward_period = call_retry(self.skale.constants_holder.get_reward_period)
+        node_info = call_retry(self.skale.nodes_data.get, self.id)
         reward_date = node_info['last_reward_date'] + reward_period
         return datetime.utcfromtimestamp(reward_date)
 
@@ -120,10 +119,8 @@ class BountyCollector:
         eth_bal_before = self.skale.web3.eth.getBalance(address)
         self.logger.info(f'ETH balance: {self.skale.web3.fromWei(eth_bal_before, "ether")}')
 
-        call_tx_retry.call(self.skale.manager.get_bounty, self.id, dry_run=True)
-        tx_res = send_tx_retry.call(self.skale.manager.get_bounty, self.id, wait_for=True)
+        tx_res = self.skale.manager.get_bounty(self.id)
         self.logger.debug(f'Receipt: {tx_res.receipt}')
-        tx_res.raise_for_status()
 
         tx_hash = tx_res.receipt['transactionHash'].hex()
         self.logger.info(LONG_LINE)
@@ -147,8 +144,7 @@ class BountyCollector:
         return tx_res.receipt['status']
 
     @tenacity.retry(wait=tenacity.wait_fixed(60),
-                    retry=tenacity.retry_if_exception_type(IsNotTimeException) | tenacity.
-                    retry_if_exception_type(TxCallFailedException))
+                    retry=tenacity.retry_if_exception_type(IsNotTimeException))
     def job(self) -> None:
         """Periodic job."""
         self.logger.debug(f'Job started')
@@ -161,7 +157,7 @@ class BountyCollector:
             raise
 
         last_block_number = self.skale.web3.eth.blockNumber
-        block_data = regular_call_retry.call(self.skale.web3.eth.getBlock, last_block_number)
+        block_data = call_retry.call(self.skale.web3.eth.getBlock, last_block_number)
         block_timestamp = datetime.utcfromtimestamp(block_data['timestamp'])
         self.logger.info(f'Current reward time: {reward_date}')
         self.logger.info(f'Block timestamp now: {block_timestamp}')
