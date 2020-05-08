@@ -21,6 +21,7 @@ import time
 from datetime import datetime
 
 import pytest
+from skale.dataclasses.tx_res import TransactionFailedError
 
 import bounty_agent
 from tests.constants import N_TEST_NODES
@@ -77,7 +78,7 @@ def test_get_bounty_neg(bounty_collector):
     print(f'Reward date: {reward_date}')
     print(f'Timestamp: {block_timestamp}')
 
-    with pytest.raises(ValueError):
+    with pytest.raises(TransactionFailedError):
         bounty_collector.get_bounty()
 
 
