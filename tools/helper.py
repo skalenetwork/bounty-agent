@@ -52,10 +52,6 @@ def init_skale(node_id=None):
     return Skale(ENDPOINT, ABI_FILEPATH, wallet)
 
 
-def check_node_id(skale, node_id):
-    return node_id in skale.nodes_data.get_active_node_ids()
-
-
 def check_if_node_is_registered(skale, node_id):
     if node_id not in skale.nodes_data.get_active_node_ids():
         err_msg = f'There is no Node with ID = {node_id} in SKALE manager'
