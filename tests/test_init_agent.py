@@ -21,7 +21,7 @@ import pytest
 
 from bounty_agent import BountyCollector
 from configs import NODE_CONFIG_FILEPATH
-from tools.config_storage import ConfigStorage
+import json
 from tools.exceptions import NodeNotFoundException
 from tools.helper import init_skale
 
@@ -39,8 +39,9 @@ def test_init_agent(skale):
     assert agent0.id == 0
 
     print("Test agent init without given node id - read id from file")
-    config_node = ConfigStorage(NODE_CONFIG_FILEPATH)
-    config_node.update({'node_id': 1})
+    with open(NODE_CONFIG_FILEPATH, 'w') as json_file:
+        json.dump({'node_id': 1}, json_file)
+
     agent1 = BountyCollector(skale)
     assert agent1.id == 1
 
@@ -49,7 +50,8 @@ def test_init_agent(skale):
         BountyCollector(skale, 100)
 
     print("Test agent init with non-integer node id")
-    config_node.update({'node_id': 'one'})
+    with open(NODE_CONFIG_FILEPATH, 'w') as json_file:
+        json.dump({'node_id': 'one'}, json_file)
 
     with pytest.raises(Exception):
         BountyCollector(skale)
