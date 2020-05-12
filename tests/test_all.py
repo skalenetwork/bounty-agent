@@ -113,6 +113,7 @@ def test_get_bounty_pos(bounty_collector):
 
 
 def test_get_bounty_second_time(bounty_collector):
+    db.clear_all_bounty_receipts()
     last_block_number = skale.web3.eth.blockNumber
     block_data = skale.web3.eth.getBlock(last_block_number)
     block_timestamp = datetime.utcfromtimestamp(block_data['timestamp'])
