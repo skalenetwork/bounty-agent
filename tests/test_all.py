@@ -112,18 +112,19 @@ def test_get_bounty_pos(bounty_collector):
     assert db.get_count_of_bounty_receipt_records() == 1
 
 
-def test_get_bounty_second_time(bounty_collector):
+def test_run_agent():
     db.clear_all_bounty_receipts()
     last_block_number = skale.web3.eth.blockNumber
     block_data = skale.web3.eth.getBlock(last_block_number)
     block_timestamp = datetime.utcfromtimestamp(block_data['timestamp'])
+
+    bounty_collector = bounty_agent.BountyCollector(skale, cur_node_id)
     reward_date = bounty_collector.get_reward_date()
     print(f'Reward date: {reward_date}')
     print(f'Timestamp: {block_timestamp}')
 
-    bounty_collector2 = bounty_agent.BountyCollector(skale, cur_node_id)
-    print(f'\nSleep for {TEST_EPOCH} sec')
-    time.sleep(TEST_EPOCH + TEST_BOUNTY_DELAY)  # plus delay to wait next block after end of epoch
     db.clear_all_bounty_receipts()
-    bounty_collector2.job()
+    bounty_collector.run()
+    time.sleep(120)
+    bounty_collector.stop()
     assert db.get_count_of_bounty_receipt_records() == 1
