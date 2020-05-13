@@ -66,6 +66,7 @@ class BountyCollector:
             # TODO: notify SKALE Admin
         end = time.time()
         self.logger.info(f'Check completed. Execution time = {end - start}')
+        self.is_stopped = False
         self.scheduler = BackgroundScheduler(
             timezone='UTC',
             job_defaults={'coalesce': True, 'misfire_grace_time': MISFIRE_GRACE_TIME})
@@ -194,9 +195,10 @@ class BountyCollector:
         self.scheduler.print_jobs()
         self.scheduler.add_listener(self.job_listener, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR)
         self.scheduler.start()
-        while True:
-            time.sleep(1)
-            pass
+
+    def stop(self):
+        self.is_stopped = True
+        self.scheduler.pause()
 
 
 if __name__ == '__main__':
@@ -208,3 +210,6 @@ if __name__ == '__main__':
     skale = init_skale(node_id)
     bounty_agent = BountyCollector(skale, node_id)
     bounty_agent.run()
+    while not bounty_agent.is_stopped:
+        time.sleep(1)
+        pass
