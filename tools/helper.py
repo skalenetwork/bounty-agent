@@ -21,10 +21,8 @@ import logging
 import os
 import tenacity
 from skale import Skale
-from skale.utils.web3_utils import init_web3
-from skale.wallets import RPCWallet, Web3Wallet
+from skale.wallets import RPCWallet
 import json
-from configs import ENV
 from configs.web3 import ABI_FILEPATH, ENDPOINT
 from tools.exceptions import NodeNotFoundException
 
@@ -42,13 +40,8 @@ call_retry = tenacity.Retrying(stop=tenacity.stop_after_attempt(10),
                                reraise=True)
 
 
-def init_skale(node_id=None):
-    if node_id is None and ENV != 'DEV':
-        wallet = RPCWallet(os.environ['TM_URL'])
-    else:
-        eth_private_key = os.environ['ETH_PRIVATE_KEY']
-        web3 = init_web3(ENDPOINT)
-        wallet = Web3Wallet(eth_private_key, web3)
+def init_skale():
+    wallet = RPCWallet(os.environ['TM_URL'])
     return Skale(ENDPOINT, ABI_FILEPATH, wallet)
 
 

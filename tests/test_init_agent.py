@@ -23,14 +23,6 @@ from bounty_agent import BountyCollector
 from configs import NODE_CONFIG_FILEPATH
 import json
 from tools.exceptions import NodeNotFoundException
-from tools.helper import init_skale
-
-
-@pytest.fixture(scope="module")
-def skale(request):
-    print("\nskale setup")
-    _skale = init_skale()
-    return _skale
 
 
 def test_init_agent(skale):

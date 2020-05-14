@@ -25,53 +25,34 @@ import pytest
 from skale.dataclasses.tx_res import TransactionFailedError
 
 import bounty_agent
-from tests.constants import N_TEST_NODES
-from tests.prepare_validator import (
-    TEST_BOUNTY_DELAY, TEST_DELTA, TEST_EPOCH, create_dirs, create_set_of_nodes, get_active_ids)
+from tests.prepare_validator import TEST_BOUNTY_DELAY, TEST_DELTA, TEST_EPOCH, get_active_ids
 from tools import db
-from tools.helper import check_if_node_is_registered, init_skale
-
-skale = init_skale()
-
-
-def setup_module(module):
-    create_dirs()
-    global cur_node_id
-    global nodes_count_before, nodes_count_to_add
-    ids = get_active_ids(skale)
-    print(f'ids = {ids}')
-    nodes_count_before = len(ids)
-    cur_node_id = max(ids) + 1 if nodes_count_before else 0
-    nodes_count_to_add = N_TEST_NODES
-    create_set_of_nodes(skale, cur_node_id, nodes_count_to_add)
-    print(f'Time just after nodes creation: {datetime.utcnow()}')
+from tools.helper import check_if_node_is_registered
 
 
 @pytest.fixture(scope="module")
-def bounty_collector(request):
+def cur_node_id(request, skale):
+    ids = get_active_ids(skale)
+    return len(ids) - 2
+
+
+@pytest.fixture(scope="module")
+def bounty_collector(request, skale, cur_node_id):
     print(f'\nInit Bounty collector for_node ID = {cur_node_id}')
     _bounty_collector = bounty_agent.BountyCollector(skale, cur_node_id)
 
     return _bounty_collector
 
 
-def test_nodes_are_created():
-
-    nodes_count_after = len(get_active_ids(skale))
-    print(f'\nwait nodes_number = {nodes_count_before + nodes_count_to_add}')
-    print(f'got nodes_number = {nodes_count_after}')
-
-    assert nodes_count_after == nodes_count_before + nodes_count_to_add
-
-
-def test_check_if_node_is_registered():
+def test_check_if_node_is_registered(skale, cur_node_id):
+    print(f'inside check cu id = {cur_node_id}')
     assert check_if_node_is_registered(skale, cur_node_id)
     assert check_if_node_is_registered(skale, cur_node_id + 1)
     with pytest.raises(NodeNotFoundException):
         check_if_node_is_registered(skale, 100)
 
 
-def test_get_bounty_neg(bounty_collector):
+def test_get_bounty_neg(skale, bounty_collector):
     last_block_number = skale.web3.eth.blockNumber
     block_data = skale.web3.eth.getBlock(last_block_number)
     block_timestamp = datetime.utcfromtimestamp(block_data['timestamp'])
@@ -83,7 +64,7 @@ def test_get_bounty_neg(bounty_collector):
         bounty_collector.get_bounty()
 
 
-def test_bounty_job_saves_data(bounty_collector):
+def test_bounty_job_saves_data(skale, bounty_collector):
     time.sleep(TEST_EPOCH - TEST_DELTA)
     last_block_number = skale.web3.eth.blockNumber
     block_data = skale.web3.eth.getBlock(last_block_number)
@@ -112,7 +93,7 @@ def test_get_bounty_pos(bounty_collector):
     assert db.get_count_of_bounty_receipt_records() == 1
 
 
-def test_run_agent():
+def test_run_agent(skale, cur_node_id):
     db.clear_all_bounty_receipts()
     last_block_number = skale.web3.eth.blockNumber
     block_data = skale.web3.eth.getBlock(last_block_number)

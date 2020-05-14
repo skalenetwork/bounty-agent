@@ -207,7 +207,7 @@ if __name__ == '__main__':
     else:
         node_id = None
 
-    skale = init_skale(node_id)
+    skale = init_skale()
     bounty_agent = BountyCollector(skale, node_id)
     bounty_agent.run()
     while not bounty_agent.is_stopped:
