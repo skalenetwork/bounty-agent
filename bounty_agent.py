@@ -21,7 +21,6 @@
 Bounty agent runs on every node of SKALE network.
 Agent requests to receive available reward for validation work.
 """
-import sys
 import time
 from datetime import datetime, timedelta
 
@@ -49,10 +48,8 @@ class BountyCollector:
         self.logger.info(f'Initialization of {self.agent_name} ...')
         if node_id is None:
             self.id = get_id_from_config(NODE_CONFIG_FILEPATH)
-            self.is_test_mode = False
         else:
             self.id = node_id
-            self.is_test_mode = True
         self.skale = skale
 
         check_if_node_is_registered(self.skale, self.id)
@@ -202,13 +199,8 @@ class BountyCollector:
 
 
 if __name__ == '__main__':
-    if len(sys.argv) > 1 and sys.argv[1].isdecimal():
-        node_id = int(sys.argv[1])
-    else:
-        node_id = None
-
     skale = init_skale()
-    bounty_agent = BountyCollector(skale, node_id)
+    bounty_agent = BountyCollector(skale)
     bounty_agent.run()
     while not bounty_agent.is_stopped:
         time.sleep(1)
