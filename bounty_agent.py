@@ -21,6 +21,7 @@
 Bounty agent runs on every node of SKALE network.
 Agent requests to receive available reward for validation work.
 """
+import logging
 import time
 from datetime import datetime, timedelta
 
@@ -28,14 +29,13 @@ import tenacity
 from apscheduler.events import EVENT_JOB_ERROR, EVENT_JOB_EXECUTED
 from apscheduler.schedulers.background import BackgroundScheduler
 from web3.logs import DISCARD
-from configs import (BLOCK_STEP_SIZE, LONG_LINE, MISFIRE_GRACE_TIME,
-                     RETRY_INTERVAL, NODE_CONFIG_FILEPATH)
+
+from configs import (BLOCK_STEP_SIZE, LONG_LINE, MISFIRE_GRACE_TIME, NODE_CONFIG_FILEPATH,
+                     RETRY_INTERVAL)
 from tools import db
 from tools.exceptions import IsNotTimeException
-from tools.helper import (check_if_node_is_registered, get_id_from_config, init_skale,
-                          call_retry)
+from tools.helper import call_retry, check_if_node_is_registered, get_id_from_config, init_skale
 from tools.logger import init_agent_logger
-import logging
 
 
 class BountyCollector:

@@ -19,16 +19,16 @@
 
 import time
 from datetime import datetime
-from tools.exceptions import NodeNotFoundException
 
 import pytest
 from skale.dataclasses.tx_res import TransactionFailedError
 
 import bounty_agent
-from tests.prepare_validator import TEST_BOUNTY_DELAY, TEST_DELTA, TEST_EPOCH, get_active_ids
-from tools import db
-from tools.helper import check_if_node_is_registered
 from configs import RETRY_INTERVAL
+from tests.prepare_validator import TEST_DELTA, TEST_EPOCH, get_active_ids
+from tools import db
+from tools.exceptions import NodeNotFoundException
+from tools.helper import check_if_node_is_registered
 
 
 @pytest.fixture(scope="module")
@@ -39,10 +39,7 @@ def cur_node_id(skale):
 
 @pytest.fixture(scope="module")
 def bounty_collector(skale, cur_node_id):
-    print(f'\nInit Bounty collector for_node ID = {cur_node_id}')
-    _bounty_collector = bounty_agent.BountyCollector(skale, cur_node_id)
-
-    return _bounty_collector
+    return bounty_agent.BountyCollector(skale, cur_node_id)
 
 
 def test_check_if_node_is_registered(skale, cur_node_id):
@@ -72,8 +69,8 @@ def test_bounty_job_saves_data(skale, bounty_collector):
     reward_date = bounty_collector.get_reward_date()
     print(f'Reward date: {reward_date}')
     print(f'Timestamp: {block_timestamp}')
-    print(f'\nSleep for {TEST_DELTA} sec')
-    time.sleep(TEST_DELTA + TEST_BOUNTY_DELAY)  # plus delay to wait next block after end of epoch
+    print(f'Sleep for {TEST_DELTA} sec')
+    time.sleep(TEST_DELTA)
 
     db.clear_all_bounty_receipts()
     bounty_collector.job()
@@ -93,7 +90,7 @@ def test_run_agent(skale, cur_node_id):
 
     db.clear_all_bounty_receipts()
     bounty_collector.run()
-    print(f'\nSleep for {TEST_EPOCH + TEST_DELTA + RETRY_INTERVAL} sec')
+    print(f'Sleep for {TEST_EPOCH + TEST_DELTA + RETRY_INTERVAL} sec')
     time.sleep(TEST_EPOCH + TEST_DELTA + RETRY_INTERVAL)
     bounty_collector.stop()
     assert db.get_count_of_bounty_receipt_records() == 1

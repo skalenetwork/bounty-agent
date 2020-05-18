@@ -17,12 +17,14 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import json
 import logging
 import os
+
 import tenacity
 from skale import Skale
 from skale.wallets import RPCWallet
-import json
+
 from configs.web3 import ABI_FILEPATH, ENDPOINT
 from tools.exceptions import NodeNotFoundException
 

@@ -18,8 +18,9 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import json
-from tools.helper import get_id_from_config
+
 from configs import NODE_CONFIG_FILEPATH
+from tools.helper import get_id_from_config
 
 
 def test_get_id_from_config():
