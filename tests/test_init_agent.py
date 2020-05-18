@@ -25,8 +25,8 @@ import json
 from tools.exceptions import NodeNotFoundException
 
 
-def test_init_agent(skale):
-    print("Test agent init with given node id")
+def test_init_agent_pos(skale):
+    print("Test agent init with a given node id")
     agent0 = BountyCollector(skale, 0)
     assert agent0.id == 0
 
@@ -37,11 +37,20 @@ def test_init_agent(skale):
     agent1 = BountyCollector(skale)
     assert agent1.id == 1
 
-    print("Test agent init with non-existing node id")
+
+def test_init_agent_neg(skale):
+    print("Test agent init with a non-existing node id")
     with pytest.raises(NodeNotFoundException):
         BountyCollector(skale, 100)
 
-    print("Test agent init with non-integer node id")
+    print("Test agent init with a negative node id")
+    with open(NODE_CONFIG_FILEPATH, 'w') as json_file:
+        json.dump({'node_id': -1}, json_file)
+
+    with pytest.raises(Exception):
+        BountyCollector(skale)
+
+    print("Test agent init with a non-integer node id")
     with open(NODE_CONFIG_FILEPATH, 'w') as json_file:
         json.dump({'node_id': 'one'}, json_file)
 
