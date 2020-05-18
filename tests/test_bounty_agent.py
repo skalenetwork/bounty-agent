@@ -46,7 +46,6 @@ def bounty_collector(skale, cur_node_id):
 
 
 def test_check_if_node_is_registered(skale, cur_node_id):
-    print(f'inside check cu id = {cur_node_id}')
     assert check_if_node_is_registered(skale, cur_node_id)
     assert check_if_node_is_registered(skale, cur_node_id + 1)
     with pytest.raises(NodeNotFoundException):
