@@ -33,7 +33,7 @@ from web3.logs import DISCARD
 from configs import (BLOCK_STEP_SIZE, LONG_LINE, MISFIRE_GRACE_TIME, NODE_CONFIG_FILEPATH,
                      RETRY_INTERVAL)
 from tools import db
-from tools.exceptions import IsNotTimeException
+from tools.exceptions import NotTimeForBountyException
 from tools.helper import call_retry, check_if_node_is_registered, get_id_from_config, init_skale
 from tools.logger import init_agent_logger
 
@@ -142,7 +142,7 @@ class BountyCollector:
         return tx_res.receipt['status']
 
     @tenacity.retry(wait=tenacity.wait_fixed(RETRY_INTERVAL),
-                    retry=tenacity.retry_if_exception_type(IsNotTimeException))
+                    retry=tenacity.retry_if_exception_type(NotTimeForBountyException))
     def job(self) -> None:
         """Periodic job."""
         self.logger.debug(f'Job started')
@@ -161,7 +161,7 @@ class BountyCollector:
         self.logger.info(f'Block timestamp now: {block_timestamp}')
         if reward_date > block_timestamp:
             self.logger.info('Current block timestamp is less than reward time. Will try in 1 min')
-            raise IsNotTimeException(Exception)
+            raise NotTimeForBountyException(Exception)
         self.get_bounty()
 
     def job_listener(self, event):
