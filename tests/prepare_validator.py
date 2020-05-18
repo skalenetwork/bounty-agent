@@ -12,7 +12,7 @@ IP_BASE = '10.1.0.'
 TEST_PORT = 123
 DIR_LOG = '/skale_node_data/log'
 DIR_ABI = '/skale_vol/contracts_info'
-TEST_BOUNTY_DELAY = 0  # for using on geth > 0
+TEST_BOUNTY_DELAY = 0  # for using on geth must be > 0
 
 
 def create_dirs():

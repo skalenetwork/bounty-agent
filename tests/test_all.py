@@ -28,16 +28,17 @@ import bounty_agent
 from tests.prepare_validator import TEST_BOUNTY_DELAY, TEST_DELTA, TEST_EPOCH, get_active_ids
 from tools import db
 from tools.helper import check_if_node_is_registered
+from configs import RETRY_INTERVAL
 
 
 @pytest.fixture(scope="module")
-def cur_node_id(request, skale):
+def cur_node_id(skale):
     ids = get_active_ids(skale)
     return len(ids) - 2
 
 
 @pytest.fixture(scope="module")
-def bounty_collector(request, skale, cur_node_id):
+def bounty_collector(skale, cur_node_id):
     print(f'\nInit Bounty collector for_node ID = {cur_node_id}')
     _bounty_collector = bounty_agent.BountyCollector(skale, cur_node_id)
 
@@ -81,24 +82,11 @@ def test_bounty_job_saves_data(skale, bounty_collector):
     assert db.get_count_of_bounty_receipt_records() == 1
 
 
-@pytest.mark.skip(reason="skip to save time")
-def test_get_bounty_pos(bounty_collector):
-    print(f'\nSleep for {TEST_EPOCH} sec')
-    time.sleep(TEST_EPOCH)
-
-    db.clear_all_bounty_receipts()
-    status = bounty_collector.get_bounty()
-
-    assert status == 1
-    assert db.get_count_of_bounty_receipt_records() == 1
-
-
 def test_run_agent(skale, cur_node_id):
-    db.clear_all_bounty_receipts()
     last_block_number = skale.web3.eth.blockNumber
     block_data = skale.web3.eth.getBlock(last_block_number)
     block_timestamp = datetime.utcfromtimestamp(block_data['timestamp'])
-
+    db.clear_all_bounty_receipts()
     bounty_collector = bounty_agent.BountyCollector(skale, cur_node_id)
     reward_date = bounty_collector.get_reward_date()
     print(f'Reward date: {reward_date}')
@@ -106,6 +94,7 @@ def test_run_agent(skale, cur_node_id):
 
     db.clear_all_bounty_receipts()
     bounty_collector.run()
-    time.sleep(120)
+    print(f'\nSleep for {TEST_EPOCH + TEST_DELTA + RETRY_INTERVAL} sec')
+    time.sleep(TEST_EPOCH + TEST_DELTA + RETRY_INTERVAL)
     bounty_collector.stop()
     assert db.get_count_of_bounty_receipt_records() == 1
