@@ -21,7 +21,7 @@
 Bounty agent runs on every node of SKALE network.
 Agent requests to receive available reward for validation work.
 """
-import sys
+import logging
 import time
 from datetime import datetime, timedelta
 
@@ -29,14 +29,13 @@ import tenacity
 from apscheduler.events import EVENT_JOB_ERROR, EVENT_JOB_EXECUTED
 from apscheduler.schedulers.background import BackgroundScheduler
 from web3.logs import DISCARD
-from configs import (BLOCK_STEP_SIZE, LONG_LINE, MISFIRE_GRACE_TIME,
-                     NODE_CONFIG_FILEPATH)
+
+from configs import (BLOCK_STEP_SIZE, LONG_LINE, MISFIRE_GRACE_TIME, NODE_CONFIG_FILEPATH,
+                     RETRY_INTERVAL)
 from tools import db
-from tools.exceptions import IsNotTimeException
-from tools.helper import (check_if_node_is_registered, get_id_from_config, init_skale,
-                          call_retry)
+from tools.exceptions import NotTimeForBountyException
+from tools.helper import call_retry, check_if_node_is_registered, get_id_from_config, init_skale
 from tools.logger import init_agent_logger
-import logging
 
 
 class BountyCollector:
@@ -49,10 +48,8 @@ class BountyCollector:
         self.logger.info(f'Initialization of {self.agent_name} ...')
         if node_id is None:
             self.id = get_id_from_config(NODE_CONFIG_FILEPATH)
-            self.is_test_mode = False
         else:
             self.id = node_id
-            self.is_test_mode = True
         self.skale = skale
 
         check_if_node_is_registered(self.skale, self.id)
@@ -66,6 +63,7 @@ class BountyCollector:
             # TODO: notify SKALE Admin
         end = time.time()
         self.logger.info(f'Check completed. Execution time = {end - start}')
+        self.is_stopped = False
         self.scheduler = BackgroundScheduler(
             timezone='UTC',
             job_defaults={'coalesce': True, 'misfire_grace_time': MISFIRE_GRACE_TIME})
@@ -143,8 +141,8 @@ class BountyCollector:
 
         return tx_res.receipt['status']
 
-    @tenacity.retry(wait=tenacity.wait_fixed(60),
-                    retry=tenacity.retry_if_exception_type(IsNotTimeException))
+    @tenacity.retry(wait=tenacity.wait_fixed(RETRY_INTERVAL),
+                    retry=tenacity.retry_if_exception_type(NotTimeForBountyException))
     def job(self) -> None:
         """Periodic job."""
         self.logger.debug(f'Job started')
@@ -163,7 +161,7 @@ class BountyCollector:
         self.logger.info(f'Block timestamp now: {block_timestamp}')
         if reward_date > block_timestamp:
             self.logger.info('Current block timestamp is less than reward time. Will try in 1 min')
-            raise IsNotTimeException(Exception)
+            raise NotTimeForBountyException(Exception)
         self.get_bounty()
 
     def job_listener(self, event):
@@ -194,17 +192,16 @@ class BountyCollector:
         self.scheduler.print_jobs()
         self.scheduler.add_listener(self.job_listener, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR)
         self.scheduler.start()
-        while True:
-            time.sleep(1)
-            pass
+
+    def stop(self):
+        self.is_stopped = True
+        self.scheduler.pause()
 
 
 if __name__ == '__main__':
-    if len(sys.argv) > 1 and sys.argv[1].isdecimal():
-        node_id = int(sys.argv[1])
-    else:
-        node_id = None
-
-    skale = init_skale(node_id)
-    bounty_agent = BountyCollector(skale, node_id)
+    skale = init_skale()
+    bounty_agent = BountyCollector(skale)
     bounty_agent.run()
+    while not bounty_agent.is_stopped:
+        time.sleep(1)
+        pass

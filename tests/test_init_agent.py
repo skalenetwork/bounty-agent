@@ -17,39 +17,43 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import json
+
 import pytest
 
 from bounty_agent import BountyCollector
 from configs import NODE_CONFIG_FILEPATH
-from tools.config_storage import ConfigStorage
 from tools.exceptions import NodeNotFoundException
-from tools.helper import init_skale
 
 
-@pytest.fixture(scope="module")
-def skale(request):
-    print("\nskale setup")
-    _skale = init_skale()
-    return _skale
-
-
-def test_init_agent(skale):
-    print("Test agent init with given node id")
+def test_init_agent_pos(skale):
+    print("Test agent init with a given node id")
     agent0 = BountyCollector(skale, 0)
     assert agent0.id == 0
 
     print("Test agent init without given node id - read id from file")
-    config_node = ConfigStorage(NODE_CONFIG_FILEPATH)
-    config_node.update({'node_id': 1})
+    with open(NODE_CONFIG_FILEPATH, 'w') as json_file:
+        json.dump({'node_id': 1}, json_file)
+
     agent1 = BountyCollector(skale)
     assert agent1.id == 1
 
-    print("Test agent init with non-existing node id")
+
+def test_init_agent_neg(skale):
+    print("Test agent init with a non-existing node id")
     with pytest.raises(NodeNotFoundException):
         BountyCollector(skale, 100)
 
-    print("Test agent init with non-integer node id")
-    config_node.update({'node_id': 'one'})
+    print("Test agent init with a negative node id")
+    with open(NODE_CONFIG_FILEPATH, 'w') as json_file:
+        json.dump({'node_id': -1}, json_file)
+
+    with pytest.raises(Exception):
+        BountyCollector(skale)
+
+    print("Test agent init with a non-integer node id")
+    with open(NODE_CONFIG_FILEPATH, 'w') as json_file:
+        json.dump({'node_id': 'one'}, json_file)
 
     with pytest.raises(Exception):
         BountyCollector(skale)
