@@ -30,8 +30,8 @@ from apscheduler.events import EVENT_JOB_ERROR, EVENT_JOB_EXECUTED
 from apscheduler.schedulers.background import BackgroundScheduler
 from web3.logs import DISCARD
 
-from configs import (BLOCK_STEP_SIZE, LONG_LINE, MISFIRE_GRACE_TIME, NODE_CONFIG_FILEPATH,
-                     RETRY_INTERVAL)
+from configs import (BLOCK_STEP_SIZE, LONG_LINE, MIN_ETH_AMOUNT, MISFIRE_GRACE_TIME,
+                     NODE_CONFIG_FILEPATH, RETRY_INTERVAL, GAS_LIMIT)
 from tools import db
 from tools.exceptions import NotTimeForBountyException
 from tools.helper import call_retry, check_if_node_is_registered, get_id_from_config, init_skale
@@ -114,32 +114,39 @@ class BountyCollector:
 
     def get_bounty(self):
         address = self.skale.wallet.address
-        eth_bal_before = self.skale.web3.eth.getBalance(address)
-        self.logger.info(f'ETH balance: {self.skale.web3.fromWei(eth_bal_before, "ether")}')
+        eth_bal_before_tx = self.skale.web3.eth.getBalance(address)
+        if eth_bal_before_tx < MIN_ETH_AMOUNT:
+            self.logger.info(f'ETH balance: {eth_bal_before_tx} is less than {MIN_ETH_AMOUNT}')
+            # TODO: notify SKALE Admin
+        min_eth_for_tx = GAS_LIMIT * self.skale.gas_price
+        if eth_bal_before_tx < min_eth_for_tx:
+            self.logger.info(f'ETH balance: {eth_bal_before_tx} is less than {MIN_ETH_AMOUNT}')
+            # TODO: notify SKALE Admin
+        else:
 
-        tx_res = self.skale.manager.get_bounty(self.id)
-        self.logger.debug(f'Receipt: {tx_res.receipt}')
+            tx_res = self.skale.manager.get_bounty(self.id)
+            self.logger.debug(f'Receipt: {tx_res.receipt}')
 
-        tx_hash = tx_res.receipt['transactionHash'].hex()
-        self.logger.info(LONG_LINE)
-        self.logger.info('The bounty was successfully received')
+            tx_hash = tx_res.receipt['transactionHash'].hex()
+            self.logger.info(LONG_LINE)
+            self.logger.info('The bounty was successfully received')
 
-        eth_bal = self.skale.web3.eth.getBalance(address)
-        self.logger.debug(f'ETH spend: {eth_bal_before - eth_bal}')
+            eth_bal = self.skale.web3.eth.getBalance(address)
+            self.logger.debug(f'ETH spend: {eth_bal_before_tx - eth_bal}')
 
-        h_receipt = self.skale.manager.contract.events.BountyGot().processReceipt(
-            tx_res.receipt, errors=DISCARD)
-        self.logger.info(h_receipt)
-        args = h_receipt[0]['args']
-        try:
-            db.save_bounty_event(datetime.utcfromtimestamp(args['time']), str(tx_hash),
-                                 tx_res.receipt['blockNumber'], args['nodeIndex'],
-                                 args['bounty'], args['averageDowntime'],
-                                 args['averageLatency'], tx_res.receipt['gasUsed'])
-        except Exception as err:
-            self.logger.error(f'Cannot save getBounty event data to db. Error: {err}')
+            h_receipt = self.skale.manager.contract.events.BountyGot().processReceipt(
+                tx_res.receipt, errors=DISCARD)
+            self.logger.info(h_receipt)
+            args = h_receipt[0]['args']
+            try:
+                db.save_bounty_event(datetime.utcfromtimestamp(args['time']), str(tx_hash),
+                                     tx_res.receipt['blockNumber'], args['nodeIndex'],
+                                     args['bounty'], args['averageDowntime'],
+                                     args['averageLatency'], tx_res.receipt['gasUsed'])
+            except Exception as err:
+                self.logger.error(f'Cannot save getBounty event data to db. Error: {err}')
 
-        return tx_res.receipt['status']
+            return tx_res.receipt['status']
 
     @tenacity.retry(wait=tenacity.wait_fixed(RETRY_INTERVAL),
                     retry=tenacity.retry_if_exception_type(NotTimeForBountyException))
