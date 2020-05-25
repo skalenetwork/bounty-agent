@@ -25,8 +25,9 @@ import tenacity
 from skale import Skale
 from skale.wallets import RPCWallet
 
+from configs import GAS_LIMIT, MIN_ETH_AMOUNT
 from configs.web3 import ABI_FILEPATH, ENDPOINT
-from tools.exceptions import NodeNotFoundException
+from tools.exceptions import NodeNotFoundException, NotEnoughEthForTxException
 
 logger = logging.getLogger(__name__)
 
@@ -46,6 +47,20 @@ def check_if_node_is_registered(skale, node_id):
         logger.error(err_msg)
         raise NodeNotFoundException(err_msg)
     return True
+
+
+def check_required_balance(skale):
+    address = skale.wallet.address
+    eth_bal_before_tx = skale.web3.eth.getBalance(address)
+    if eth_bal_before_tx < MIN_ETH_AMOUNT:
+        logger.info(f'ETH balance: {eth_bal_before_tx} is less than {MIN_ETH_AMOUNT}')
+        # TODO: notify SKALE Admin
+    min_eth_for_tx = GAS_LIMIT * skale.gas_price
+    if eth_bal_before_tx < min_eth_for_tx:
+        logger.info(f'ETH balance ({eth_bal_before_tx}) is too low, {min_eth_for_tx} required')
+        # TODO: notify SKALE Admin
+        raise NotEnoughEthForTxException(f'ETH balance is too low to send a transaction: '
+                                         f'{eth_bal_before_tx}')
 
 
 @tenacity.retry(
