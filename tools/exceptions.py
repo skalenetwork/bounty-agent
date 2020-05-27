@@ -24,3 +24,7 @@ class NotTimeForBountyException(Exception):
 
 class NodeNotFoundException(Exception):
     """Raised when Node ID doesn't exist in SKALE Manager."""
+
+
+class NotEnoughEthForTxException(Exception):
+    """Raised when a wallet balance is too low to send a transaction."""
