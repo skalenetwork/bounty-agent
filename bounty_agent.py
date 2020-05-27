@@ -140,7 +140,7 @@ class BountyCollector:
                     retry=tenacity.retry_if_exception_type(NotTimeForBountyException))
     def job(self) -> None:
         """Periodic job."""
-        self.logger.debug(f'Job started')
+        self.logger.debug('Job started')
 
         try:
             reward_date = self.get_reward_date()

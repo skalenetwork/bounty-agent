@@ -76,5 +76,5 @@ def get_id_from_config(node_config_filepath) -> int:
         return data['node_id']
     except (FileNotFoundError, KeyError) as err:
         logger.warning(
-            f'Cannot read a node id from config file - is the node already registered?')
+            'Cannot read a node id from config file - is the node already registered?')
         raise err
