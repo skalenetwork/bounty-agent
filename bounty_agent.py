@@ -30,12 +30,12 @@ from apscheduler.events import EVENT_JOB_ERROR, EVENT_JOB_EXECUTED
 from apscheduler.schedulers.background import BackgroundScheduler
 from web3.logs import DISCARD
 
-from configs import (BLOCK_STEP_SIZE, LONG_LINE, MISFIRE_GRACE_TIME, NODE_CONFIG_FILEPATH,
+from configs import (LONG_LINE, MISFIRE_GRACE_TIME, NODE_CONFIG_FILEPATH,
                      RETRY_INTERVAL)
 from tools import db
 from tools.exceptions import NotTimeForBountyException
 from tools.helper import (call_retry, check_if_node_is_registered, check_required_balance,
-                          get_id_from_config, init_skale)
+                          get_id_from_config, init_skale, notify_validator)
 from tools.logger import init_agent_logger
 
 
@@ -54,16 +54,7 @@ class BountyCollector:
         self.skale = skale
 
         check_if_node_is_registered(self.skale, self.id)
-
-        self.logger.info('Check logs on blockchain')
-        start = time.time()
-        try:
-            self.collect_last_bounty_logs()
-        except Exception as err:
-            self.logger.error(f'Error occurred while checking logs from blockchain: {err} ')
-            # TODO: notify SKALE Admin
-        end = time.time()
-        self.logger.info(f'Check completed. Execution time = {end - start}')
+        notify_validator('Bounty agent (re)started')
         self.is_stopped = False
         self.scheduler = BackgroundScheduler(
             timezone='UTC',
@@ -75,43 +66,6 @@ class BountyCollector:
         node_info = call_retry(self.skale.nodes_data.get, self.id)
         reward_date = node_info['last_reward_date'] + reward_period
         return datetime.utcfromtimestamp(reward_date)
-
-    def collect_last_bounty_logs(self):
-        start_block_number = self.skale.nodes_data.get(self.id)['start_block']
-        last_block_number_in_db = db.get_bounty_max_block_number()
-        if last_block_number_in_db is not None:
-            start_block_number = last_block_number_in_db + 1
-        count = 0
-        while True:
-            last_block_number = self.skale.web3.eth.blockNumber
-            self.logger.debug(f'last block = {last_block_number}')
-            end_chunk_block_number = start_block_number + BLOCK_STEP_SIZE - 1
-
-            if end_chunk_block_number > last_block_number:
-                end_chunk_block_number = last_block_number + 1
-            event_filter = self.skale.manager.contract.events.BountyGot.createFilter(
-                argument_filters={'nodeIndex': self.id},
-                fromBlock=hex(start_block_number),
-                toBlock=hex(end_chunk_block_number))
-            logs = event_filter.get_all_entries()
-
-            for log in logs:
-                args = log['args']
-                tx_block_number = log['blockNumber']
-                block_data = self.skale.web3.eth.getBlock(tx_block_number)
-                block_timestamp = datetime.utcfromtimestamp(block_data['timestamp'])
-                self.logger.debug(log)
-                tx_hash = log['transactionHash'].hex()
-                gas_used = self.skale.web3.eth.getTransactionReceipt(tx_hash)['gasUsed']
-                db.save_bounty_event(block_timestamp, tx_hash,
-                                     log['blockNumber'], args['nodeIndex'], args['bounty'],
-                                     args['averageDowntime'], args['averageLatency'],
-                                     gas_used)
-                count += 1
-            self.logger.debug(f'Iterations count = {count}')
-            start_block_number = start_block_number + BLOCK_STEP_SIZE
-            if end_chunk_block_number >= last_block_number:
-                break
 
     def get_bounty(self):
         check_required_balance(self.skale)
