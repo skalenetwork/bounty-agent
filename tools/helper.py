@@ -81,9 +81,11 @@ def get_id_from_config(node_config_filepath) -> int:
         raise err
 
 
-def notify_validator(message):
+def notify_validator(message, node_info):
     """Send message to telegram."""
-    message_data = {"message": message}
+    node_data = f'Node {node_info["name"]}, IP = {node_info["ip"]}\n'
+    logger.info(message)
+    message_data = {"message": node_data + message}
     try:
         response = requests.post(url=NOTIFIER_URL, json=message_data)
     except requests.exceptions.ConnectionError as err:
