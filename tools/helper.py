@@ -85,7 +85,7 @@ def notify_validator(message):
     """Send message to telegram."""
     message_data = {"message": message}
     try:
-        response = requests.post(url=NOTIFIER_URL, data=message_data)
+        response = requests.post(url=NOTIFIER_URL, json=message_data)
     except requests.exceptions.ConnectionError as err:
         logger.info(f'Could not connect to {NOTIFIER_URL}')
         logger.error(err)
