@@ -56,7 +56,7 @@ class BountyCollector:
         check_if_node_is_registered(self.skale, self.id)
 
         try:
-            node_info = call_retry(self.skale.nodes_data.get, self.id)
+            node_info = call_retry(self.skale.nodes.get, self.id)
         except Exception as err:
             notify_validator(
                 f'Cannot get node info for node ID = {self.id} from SKALE Manager: {err}',
@@ -74,7 +74,7 @@ class BountyCollector:
     def get_reward_date(self):
         try:
             reward_period = call_retry(self.skale.constants_holder.get_reward_period)
-            node_info = call_retry(self.skale.nodes_data.get, self.id)
+            node_info = call_retry(self.skale.nodes.get, self.id)
         except Exception as err:
             notify_validator(f'Cannot get reward date from SKALE Manager: {err}', self.node_info)
             raise
