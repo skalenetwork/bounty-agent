@@ -54,7 +54,17 @@ class BountyCollector:
         self.skale = skale
 
         check_if_node_is_registered(self.skale, self.id)
-        notify_validator('Bounty agent (re)started')
+
+        try:
+            node_info = call_retry(self.skale.nodes_data.get, self.id)
+        except Exception as err:
+            notify_validator(
+                f'Cannot get node info for node ID = {self.id} from SKALE Manager: {err}',
+                {"id": self.id, "ip": "unknown"}
+            )
+            raise
+        self.node_info = node_info
+        notify_validator('Bounty agent (re)started', node_info)
         self.is_stopped = False
         self.scheduler = BackgroundScheduler(
             timezone='UTC',
@@ -62,8 +72,12 @@ class BountyCollector:
         self.logger.info(f'Initialization of {self.agent_name} is completed. Node ID = {self.id}')
 
     def get_reward_date(self):
-        reward_period = call_retry(self.skale.constants_holder.get_reward_period)
-        node_info = call_retry(self.skale.nodes_data.get, self.id)
+        try:
+            reward_period = call_retry(self.skale.constants_holder.get_reward_period)
+            node_info = call_retry(self.skale.nodes_data.get, self.id)
+        except Exception as err:
+            notify_validator(f'Cannot get reward date from SKALE Manager: {err}', self.node_info)
+            raise
         reward_date = node_info['last_reward_date'] + reward_period
         return datetime.utcfromtimestamp(reward_date)
 
@@ -95,14 +109,7 @@ class BountyCollector:
     def job(self) -> None:
         """Periodic job."""
         self.logger.debug('Job started')
-
-        try:
-            reward_date = self.get_reward_date()
-        except Exception as err:
-            self.logger.error(f'Cannot get reward date from SKALE Manager: {err}')
-            # TODO: notify SKALE Admin
-            raise
-
+        reward_date = self.get_reward_date()
         last_block_number = self.skale.web3.eth.blockNumber
         block_data = call_retry.call(self.skale.web3.eth.getBlock, last_block_number)
         block_timestamp = datetime.utcfromtimestamp(block_data['timestamp'])
