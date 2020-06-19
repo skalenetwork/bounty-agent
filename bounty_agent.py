@@ -22,20 +22,22 @@ Bounty agent runs on every node of SKALE network.
 Agent requests to receive available reward for validation work.
 """
 import logging
+import socket
 import time
 from datetime import datetime, timedelta
 
 import tenacity
 from apscheduler.events import EVENT_JOB_ERROR, EVENT_JOB_EXECUTED
 from apscheduler.schedulers.background import BackgroundScheduler
+from skale.transactions.result import TransactionError
 from web3.logs import DISCARD
 
-from configs import (LONG_LINE, MISFIRE_GRACE_TIME, NODE_CONFIG_FILEPATH,
-                     RETRY_INTERVAL)
+from configs import LONG_LINE, MISFIRE_GRACE_TIME, NODE_CONFIG_FILEPATH, RETRY_INTERVAL
 from tools import db
 from tools.exceptions import NotTimeForBountyException
-from tools.helper import (call_retry, check_if_node_is_registered, check_required_balance,
-                          get_id_from_config, init_skale, notify_validator)
+from tools.helper import (
+    Notifier, call_retry, check_if_node_is_registered, check_required_balance, get_id_from_config,
+    init_skale)
 from tools.logger import init_agent_logger
 
 
@@ -55,16 +57,10 @@ class BountyCollector:
 
         check_if_node_is_registered(self.skale, self.id)
 
-        try:
-            node_info = call_retry(self.skale.nodes.get, self.id)
-        except Exception as err:
-            notify_validator(
-                f'Cannot get node info for node ID = {self.id} from SKALE Manager: {err}',
-                {"id": self.id, "ip": "unknown"}
-            )
-            raise
-        self.node_info = node_info
-        notify_validator('Bounty agent (re)started', node_info)
+        node_info = call_retry(self.skale.nodes.get, self.id)
+        self.notifier = Notifier(node_info['name'], self.id, socket.inet_ntoa(node_info['ip']))
+        res = self.notifier.send('Bounty agent started')
+        print(res)
         self.is_stopped = False
         self.scheduler = BackgroundScheduler(
             timezone='UTC',
@@ -76,14 +72,19 @@ class BountyCollector:
             reward_period = call_retry(self.skale.constants_holder.get_reward_period)
             node_info = call_retry(self.skale.nodes.get, self.id)
         except Exception as err:
-            notify_validator(f'Cannot get reward date from SKALE Manager: {err}', self.node_info)
+            self.notifier.send(f'Cannot get reward date from SKALE Manager: {err}', self.node_info)
             raise
         reward_date = node_info['last_reward_date'] + reward_period
         return datetime.utcfromtimestamp(reward_date)
 
     def get_bounty(self):
         check_required_balance(self.skale)
-        tx_res = self.skale.manager.get_bounty(self.id)
+        try:
+            tx_res = self.skale.manager.get_bounty(self.id, skip_dry_run=True)
+        except TransactionError as err:
+            self.notifier.send(str(err))
+            raise
+
         self.logger.debug(f'Receipt: {tx_res.receipt}')
 
         tx_hash = tx_res.receipt['transactionHash'].hex()

@@ -30,6 +30,8 @@ from configs import GAS_LIMIT, MIN_ETH_AMOUNT, NOTIFIER_URL
 from configs.web3 import ABI_FILEPATH, ENDPOINT
 from tools.exceptions import NodeNotFoundException, NotEnoughEthForTxException
 
+DEBUG = True
+
 logger = logging.getLogger(__name__)
 
 call_retry = tenacity.Retrying(stop=tenacity.stop_after_attempt(10),
@@ -81,29 +83,48 @@ def get_id_from_config(node_config_filepath) -> int:
         raise err
 
 
-def notify_validator(message, node_info):
-    """Send message to telegram."""
-    node_data = f'Node {node_info["name"]}, IP = {node_info["ip"]}\n'
-    logger.info(message)
-    message_data = {"message": node_data + message}
-    try:
-        response = requests.post(url=NOTIFIER_URL, json=message_data)
-    except requests.exceptions.ConnectionError as err:
-        logger.info(f'Could not connect to {NOTIFIER_URL}')
-        logger.error(err)
-        return 1
-    except Exception as err:
-        logger.info(f'Cannot notify validator {NOTIFIER_URL}')
-        logger.error(err)
-        return 1
+class Notifier:
+    def __init__(self, node_name, node_id, node_ip):
+        self.header = f'Node: {node_name}, ID: {node_id}, IP: {node_ip}\n\n'
 
-    if response.status_code != requests.codes.ok:
-        logger.info(f'Request to {NOTIFIER_URL} failed, status code: {response.status_code}')
-        return 1
+    def send(self, message, title=None):
+        """Send message to telegram."""
+        logger.info(message)
 
-    res = response.json()
-    if res.get('status') == 'error':
-        logger.info(f"Cannot notify validator: {res['payload']}")
-        return 1
-    logger.debug('Message to validator was sent successfully')
-    return 0
+        if title is not None:
+            header = title + '\n' + self.header
+        else:
+            header = self.header
+        # if DEBUG:
+        #     send_test(header + message)
+        #     return 0
+
+        message_data = {"message": header + message}
+
+        try:
+            response = requests.post(url=NOTIFIER_URL, json=message_data)
+        except requests.exceptions.ConnectionError as err:
+            logger.info(f'Could not connect to {NOTIFIER_URL}')
+            logger.error(err)
+            return 1
+        except Exception as err:
+            logger.info(f'Cannot notify validator {NOTIFIER_URL}')
+            logger.error(err)
+            return 1
+
+        if response.status_code != requests.codes.ok:
+            logger.info(f'Request to {NOTIFIER_URL} failed, status code: {response.status_code}')
+            return 1
+
+        res = response.json()
+        if res.get('status') == 'error':
+            logger.info(f"Cannot notify validator: {res['payload']}")
+            return 1
+        logger.debug('Message to validator was sent successfully')
+        return 0
+
+
+# def send_test(message):  # for tests
+#     from tools.tg_bot import TgBot
+#     bot = TgBot()
+#     bot.send_message(message)
