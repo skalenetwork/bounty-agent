@@ -80,7 +80,7 @@ class BountyCollector:
     def get_bounty(self):
         check_required_balance(self.skale)
         try:
-            tx_res = self.skale.manager.get_bounty(self.id, skip_dry_run=True)
+            tx_res = self.skale.manager.get_bounty(self.id)
         except TransactionError as err:
             self.notifier.send(str(err))
             raise
