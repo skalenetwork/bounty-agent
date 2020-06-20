@@ -104,12 +104,10 @@ class Notifier:
         try:
             response = requests.post(url=NOTIFIER_URL, json=message_data)
         except requests.exceptions.ConnectionError as err:
-            logger.info(f'Could not connect to {NOTIFIER_URL}')
-            logger.error(err)
+            logger.info(f'Could not connect to {NOTIFIER_URL}. {err}')
             return 1
         except Exception as err:
-            logger.info(f'Cannot notify validator {NOTIFIER_URL}')
-            logger.error(err)
+            logger.info(f'Cannot notify validator {NOTIFIER_URL}. {err}')
             return 1
 
         if response.status_code != requests.codes.ok:
@@ -118,7 +116,8 @@ class Notifier:
 
         res = response.json()
         if res.get('status') == 'error':
-            logger.info(f"Cannot notify validator: {res['payload']}")
+            logger.dubug(f"Cannot notify validator: {res['payload']}")
+            logger.info('Telegram notifications are not supported on the node')
             return 1
         logger.debug('Message to validator was sent successfully')
         return 0

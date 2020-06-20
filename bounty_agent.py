@@ -59,8 +59,7 @@ class BountyCollector:
 
         node_info = call_retry(self.skale.nodes.get, self.id)
         self.notifier = Notifier(node_info['name'], self.id, socket.inet_ntoa(node_info['ip']))
-        res = self.notifier.send('Bounty agent started')
-        print(res)
+        self.notifier.send('Bounty agent started')
         self.is_stopped = False
         self.scheduler = BackgroundScheduler(
             timezone='UTC',

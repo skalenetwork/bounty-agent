@@ -22,8 +22,6 @@ from peewee import CharField, DateTimeField, IntegerField, Model, MySQLDatabase,
 
 from configs.db import DB_HOST, DB_NAME, DB_PASSWORD, DB_PORT, DB_USER
 
-print(f'DB HOST = {DB_HOST}')
-
 
 db = MySQLDatabase(
     DB_NAME, user=DB_USER,
