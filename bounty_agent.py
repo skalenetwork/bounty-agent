@@ -77,7 +77,7 @@ class BountyCollector:
         return datetime.utcfromtimestamp(reward_date)
 
     def get_bounty(self):
-        check_required_balance(self.skale)
+        check_required_balance(self.skale, self.notifier)
         try:
             tx_res = self.skale.manager.get_bounty(self.id)
         except TransactionError as err:
