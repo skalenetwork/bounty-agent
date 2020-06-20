@@ -95,6 +95,8 @@ class BountyCollector:
             tx_res.receipt, errors=DISCARD)
         self.logger.info(h_receipt)
         args = h_receipt[0]['args']
+        bounty_in_skl = self.skale.web3.fromWei(args["bounty"], 'ether')
+        self.notifier.send(f'Bounty awarded to node: {bounty_in_skl:.3f} SKL')
         try:
             db.save_bounty_event(datetime.utcfromtimestamp(args['time']), str(tx_hash),
                                  tx_res.receipt['blockNumber'], args['nodeIndex'],
