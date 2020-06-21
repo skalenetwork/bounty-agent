@@ -23,14 +23,11 @@ import os
 
 import requests
 import tenacity
-from skale import Skale
-from skale.wallets import RPCWallet
-
 from configs import MIN_ETH_AMOUNT, NOTIFIER_URL
 from configs.web3 import ABI_FILEPATH, ENDPOINT
+from skale import Skale
+from skale.wallets import RPCWallet
 from tools.exceptions import NodeNotFoundException
-
-DEBUG = True
 
 logger = logging.getLogger(__name__)
 
@@ -57,12 +54,6 @@ def check_required_balance(skale, notifier):
     eth_bal_before_tx = skale.web3.eth.getBalance(address)
     if eth_bal_before_tx < MIN_ETH_AMOUNT:
         notifier.send(f'ETH balance: {eth_bal_before_tx} is less than {MIN_ETH_AMOUNT}')
-    # min_eth_for_tx = GAS_LIMIT * skale.gas_price
-    # if eth_bal_before_tx < min_eth_for_tx:
-    #     logger.info(f'ETH balance ({eth_bal_before_tx}) is too low, {min_eth_for_tx} required')
-    #     # TODO: notify SKALE Admin
-    #     raise NotEnoughEthForTxException(f'ETH balance is too low to send a transaction: '
-    #                                      f'{eth_bal_before_tx}')
 
 
 @tenacity.retry(
@@ -95,10 +86,6 @@ class Notifier:
             header = title + '\n' + self.header
         else:
             header = self.header
-        # if DEBUG:
-        #     send_test(header + message)
-        #     return 0
-
         message_data = {"message": header + message}
 
         try:
@@ -109,7 +96,6 @@ class Notifier:
         except Exception as err:
             logger.info(f'Cannot notify validator {NOTIFIER_URL}. {err}')
             return 1
-
         if response.status_code != requests.codes.ok:
             logger.info(f'Request to {NOTIFIER_URL} failed, status code: {response.status_code}')
             return 1
@@ -121,9 +107,3 @@ class Notifier:
             return 1
         logger.debug('Message to validator was sent successfully')
         return 0
-
-
-# def send_test(message):  # for tests
-#     from tools.tg_bot import TgBot
-#     bot = TgBot()
-#     bot.send_message(message)

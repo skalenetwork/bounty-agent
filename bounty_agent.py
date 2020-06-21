@@ -29,16 +29,15 @@ from datetime import datetime, timedelta
 import tenacity
 from apscheduler.events import EVENT_JOB_ERROR, EVENT_JOB_EXECUTED
 from apscheduler.schedulers.background import BackgroundScheduler
-from skale.transactions.result import TransactionError
-from web3.logs import DISCARD
-
 from configs import LONG_LINE, MISFIRE_GRACE_TIME, NODE_CONFIG_FILEPATH, RETRY_INTERVAL
+from skale.transactions.result import TransactionError
 from tools import db
 from tools.exceptions import NotTimeForBountyException
 from tools.helper import (
     Notifier, call_retry, check_if_node_is_registered, check_required_balance, get_id_from_config,
     init_skale)
 from tools.logger import init_agent_logger
+from web3.logs import DISCARD
 
 
 class BountyCollector:
