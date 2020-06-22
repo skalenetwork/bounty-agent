@@ -29,15 +29,16 @@ from datetime import datetime, timedelta
 import tenacity
 from apscheduler.events import EVENT_JOB_ERROR, EVENT_JOB_EXECUTED
 from apscheduler.schedulers.background import BackgroundScheduler
-from configs import LONG_LINE, MISFIRE_GRACE_TIME, NODE_CONFIG_FILEPATH, RETRY_INTERVAL
 from skale.transactions.result import TransactionError
+from web3.logs import DISCARD
+
+from configs import LONG_LINE, MISFIRE_GRACE_TIME, NODE_CONFIG_FILEPATH, RETRY_INTERVAL
 from tools import db
 from tools.exceptions import NotTimeForBountyException
 from tools.helper import (
-    Notifier, call_retry, check_if_node_is_registered, check_required_balance, get_id_from_config,
-    init_skale)
+    MsgIcon, Notifier, call_retry, check_if_node_is_registered, check_required_balance,
+    get_id_from_config, init_skale)
 from tools.logger import init_agent_logger
-from web3.logs import DISCARD
 
 
 class BountyCollector:
@@ -58,7 +59,7 @@ class BountyCollector:
 
         node_info = call_retry(self.skale.nodes.get, self.id)
         self.notifier = Notifier(node_info['name'], self.id, socket.inet_ntoa(node_info['ip']))
-        self.notifier.send('Bounty agent started')
+        self.notifier.send('Bounty agent started', icon=MsgIcon.INFO)
         self.is_stopped = False
         self.scheduler = BackgroundScheduler(
             timezone='UTC',
@@ -70,7 +71,7 @@ class BountyCollector:
             reward_period = call_retry(self.skale.constants_holder.get_reward_period)
             node_info = call_retry(self.skale.nodes.get, self.id)
         except Exception as err:
-            self.notifier.send(f'Cannot get reward date from SKALE Manager: {err}', self.node_info)
+            self.notifier.send(f'Cannot get reward date from SKALE Manager: {err}', MsgIcon.ERROR)
             raise
         reward_date = node_info['last_reward_date'] + reward_period
         return datetime.utcfromtimestamp(reward_date)
@@ -80,7 +81,7 @@ class BountyCollector:
         try:
             tx_res = self.skale.manager.get_bounty(self.id)
         except TransactionError as err:
-            self.notifier.send(str(err))
+            self.notifier.send(str(err), MsgIcon.CRITICAL)
             raise
 
         self.logger.debug(f'Receipt: {tx_res.receipt}')
@@ -94,7 +95,7 @@ class BountyCollector:
         self.logger.info(h_receipt)
         args = h_receipt[0]['args']
         bounty_in_skl = self.skale.web3.fromWei(args["bounty"], 'ether')
-        self.notifier.send(f'Bounty awarded to node: {bounty_in_skl:.3f} SKL')
+        self.notifier.send(f'Bounty awarded to node: {bounty_in_skl:.3f} SKL', MsgIcon.BOUNTY)
         try:
             db.save_bounty_event(datetime.utcfromtimestamp(args['time']), str(tx_hash),
                                  tx_res.receipt['blockNumber'], args['nodeIndex'],
