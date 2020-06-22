@@ -22,20 +22,22 @@ Bounty agent runs on every node of SKALE network.
 Agent requests to receive available reward for validation work.
 """
 import logging
+import socket
 import time
 from datetime import datetime, timedelta
 
 import tenacity
 from apscheduler.events import EVENT_JOB_ERROR, EVENT_JOB_EXECUTED
 from apscheduler.schedulers.background import BackgroundScheduler
+from skale.transactions.result import TransactionError
 from web3.logs import DISCARD
 
-from configs import (BLOCK_STEP_SIZE, LONG_LINE, MISFIRE_GRACE_TIME, NODE_CONFIG_FILEPATH,
-                     RETRY_INTERVAL)
+from configs import LONG_LINE, MISFIRE_GRACE_TIME, NODE_CONFIG_FILEPATH, RETRY_INTERVAL
 from tools import db
 from tools.exceptions import NotTimeForBountyException
-from tools.helper import (call_retry, check_if_node_is_registered, check_required_balance,
-                          get_id_from_config, init_skale)
+from tools.helper import (
+    MsgIcon, Notifier, call_retry, check_if_node_is_registered, check_required_balance,
+    get_id_from_config, init_skale)
 from tools.logger import init_agent_logger
 
 
@@ -55,15 +57,9 @@ class BountyCollector:
 
         check_if_node_is_registered(self.skale, self.id)
 
-        self.logger.info('Check logs on blockchain')
-        start = time.time()
-        try:
-            self.collect_last_bounty_logs()
-        except Exception as err:
-            self.logger.error(f'Error occurred while checking logs from blockchain: {err} ')
-            # TODO: notify SKALE Admin
-        end = time.time()
-        self.logger.info(f'Check completed. Execution time = {end - start}')
+        node_info = call_retry(self.skale.nodes.get, self.id)
+        self.notifier = Notifier(node_info['name'], self.id, socket.inet_ntoa(node_info['ip']))
+        self.notifier.send('Bounty agent started', icon=MsgIcon.INFO)
         self.is_stopped = False
         self.scheduler = BackgroundScheduler(
             timezone='UTC',
@@ -71,51 +67,23 @@ class BountyCollector:
         self.logger.info(f'Initialization of {self.agent_name} is completed. Node ID = {self.id}')
 
     def get_reward_date(self):
-        reward_period = call_retry(self.skale.constants_holder.get_reward_period)
-        node_info = call_retry(self.skale.nodes_data.get, self.id)
+        try:
+            reward_period = call_retry(self.skale.constants_holder.get_reward_period)
+            node_info = call_retry(self.skale.nodes.get, self.id)
+        except Exception as err:
+            self.notifier.send(f'Cannot get reward date from SKALE Manager: {err}', MsgIcon.ERROR)
+            raise
         reward_date = node_info['last_reward_date'] + reward_period
         return datetime.utcfromtimestamp(reward_date)
 
-    def collect_last_bounty_logs(self):
-        start_block_number = self.skale.nodes_data.get(self.id)['start_block']
-        last_block_number_in_db = db.get_bounty_max_block_number()
-        if last_block_number_in_db is not None:
-            start_block_number = last_block_number_in_db + 1
-        count = 0
-        while True:
-            last_block_number = self.skale.web3.eth.blockNumber
-            self.logger.debug(f'last block = {last_block_number}')
-            end_chunk_block_number = start_block_number + BLOCK_STEP_SIZE - 1
-
-            if end_chunk_block_number > last_block_number:
-                end_chunk_block_number = last_block_number + 1
-            event_filter = self.skale.manager.contract.events.BountyGot.createFilter(
-                argument_filters={'nodeIndex': self.id},
-                fromBlock=hex(start_block_number),
-                toBlock=hex(end_chunk_block_number))
-            logs = event_filter.get_all_entries()
-
-            for log in logs:
-                args = log['args']
-                tx_block_number = log['blockNumber']
-                block_data = self.skale.web3.eth.getBlock(tx_block_number)
-                block_timestamp = datetime.utcfromtimestamp(block_data['timestamp'])
-                self.logger.debug(log)
-                tx_hash = log['transactionHash'].hex()
-                gas_used = self.skale.web3.eth.getTransactionReceipt(tx_hash)['gasUsed']
-                db.save_bounty_event(block_timestamp, tx_hash,
-                                     log['blockNumber'], args['nodeIndex'], args['bounty'],
-                                     args['averageDowntime'], args['averageLatency'],
-                                     gas_used)
-                count += 1
-            self.logger.debug(f'Iterations count = {count}')
-            start_block_number = start_block_number + BLOCK_STEP_SIZE
-            if end_chunk_block_number >= last_block_number:
-                break
-
     def get_bounty(self):
-        check_required_balance(self.skale)
-        tx_res = self.skale.manager.get_bounty(self.id)
+        check_required_balance(self.skale, self.notifier)
+        try:
+            tx_res = self.skale.manager.get_bounty(self.id)
+        except TransactionError as err:
+            self.notifier.send(str(err), MsgIcon.CRITICAL)
+            raise
+
         self.logger.debug(f'Receipt: {tx_res.receipt}')
 
         tx_hash = tx_res.receipt['transactionHash'].hex()
@@ -126,6 +94,8 @@ class BountyCollector:
             tx_res.receipt, errors=DISCARD)
         self.logger.info(h_receipt)
         args = h_receipt[0]['args']
+        bounty_in_skl = self.skale.web3.fromWei(args["bounty"], 'ether')
+        self.notifier.send(f'Bounty awarded to node: {bounty_in_skl:.3f} SKL', MsgIcon.BOUNTY)
         try:
             db.save_bounty_event(datetime.utcfromtimestamp(args['time']), str(tx_hash),
                                  tx_res.receipt['blockNumber'], args['nodeIndex'],
@@ -141,14 +111,7 @@ class BountyCollector:
     def job(self) -> None:
         """Periodic job."""
         self.logger.debug('Job started')
-
-        try:
-            reward_date = self.get_reward_date()
-        except Exception as err:
-            self.logger.error(f'Cannot get reward date from SKALE Manager: {err}')
-            # TODO: notify SKALE Admin
-            raise
-
+        reward_date = self.get_reward_date()
         last_block_number = self.skale.web3.eth.blockNumber
         block_data = call_retry.call(self.skale.web3.eth.getBlock, last_block_number)
         block_timestamp = datetime.utcfromtimestamp(block_data['timestamp'])
