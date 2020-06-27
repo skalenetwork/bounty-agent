@@ -1,5 +1,4 @@
-skale.py==3.8dev2
-docker==4.2.1
+skale.py==3.10.dev1
 schedule==0.6.0
 tenacity==6.2.0
 apscheduler==3.6.3
