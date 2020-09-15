@@ -32,12 +32,13 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from skale.transactions.result import TransactionError
 from web3.logs import DISCARD
 
-from configs import LONG_LINE, MISFIRE_GRACE_TIME, NODE_CONFIG_FILEPATH, RETRY_INTERVAL
+from configs import (LONG_LINE, MISFIRE_GRACE_TIME, NODE_CONFIG_FILEPATH,
+                     RETRY_INTERVAL)
 from tools import db
 from tools.exceptions import NotTimeForBountyException
-from tools.helper import (
-    MsgIcon, Notifier, call_retry, check_if_node_is_registered, check_required_balance,
-    get_id_from_config, init_skale)
+from tools.helper import (MsgIcon, Notifier, call_retry,
+                          check_if_node_is_registered, get_id_from_config,
+                          init_skale)
 from tools.logger import init_agent_logger
 
 
@@ -77,7 +78,6 @@ class BountyCollector:
         return datetime.utcfromtimestamp(reward_date)
 
     def get_bounty(self):
-        check_required_balance(self.skale, self.notifier)
         try:
             tx_res = self.skale.manager.get_bounty(self.id)
         except TransactionError as err:

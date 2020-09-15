@@ -1,5 +1,4 @@
 import os
-from skale.utils.constants import GAS
 
 ENV = os.environ.get('ENV')
 
@@ -19,4 +18,3 @@ MIN_ETH_AMOUNT_IN_SKL = 0.01
 MIN_ETH_AMOUNT = int(MIN_ETH_AMOUNT_IN_SKL * (10 ** 18))
 RETRY_INTERVAL = 60
 MISFIRE_GRACE_TIME = 365 * 24 * 60 * 60
-GAS_LIMIT = GAS['get_bounty']
