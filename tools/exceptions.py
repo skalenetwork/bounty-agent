@@ -18,22 +18,13 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-class IsNotTimeException(Exception):
-
+class NotTimeForBountyException(Exception):
     """Raised when reward date has come but current block's timestamp is less than reward date."""
-
-    pass
 
 
 class NodeNotFoundException(Exception):
-
     """Raised when Node ID doesn't exist in SKALE Manager."""
 
-    pass
 
-
-class TxCallFailedException(Exception):
-
-    """Raised when getBounty transaction failed."""
-
-    pass
+class NotEnoughEthForTxException(Exception):
+    """Raised when a wallet balance is too low to send a transaction."""
