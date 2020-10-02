@@ -21,15 +21,16 @@
 Bounty agent runs on every node of SKALE network.
 Agent requests to receive available reward for validation work.
 """
+import calendar
 import logging
 import socket
 import time
 from datetime import datetime, timedelta
-import calendar
-from dateutil.relativedelta import relativedelta
+
 import tenacity
 from apscheduler.events import EVENT_JOB_ERROR, EVENT_JOB_EXECUTED
 from apscheduler.schedulers.background import BackgroundScheduler
+from dateutil.relativedelta import relativedelta
 from skale.transactions.result import TransactionError
 from web3.logs import DISCARD
 
@@ -70,12 +71,10 @@ class BountyCollector:
 
     def get_reward_date(self):
         try:
-            # reward_period = call_retry(self.skale.constants_holder.get_reward_period)
             node_info = call_retry(self.skale.nodes.get, self.id)
         except Exception as err:
             self.notifier.send(f'Cannot get reward date from SKALE Manager: {err}', MsgIcon.ERROR)
             raise
-
         last_reward_date = datetime.utcfromtimestamp(node_info['last_reward_date'])
         next_reward_date = last_reward_date + relativedelta(months=1)
         last_reward_day = last_reward_date.day
