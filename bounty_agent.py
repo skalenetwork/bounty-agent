@@ -34,8 +34,8 @@ from dateutil.relativedelta import relativedelta
 from skale.transactions.result import TransactionError
 from web3.logs import DISCARD
 
-from configs import (LONG_LINE, MISFIRE_GRACE_TIME, NODE_CONFIG_FILEPATH,
-                     RETRY_INTERVAL)
+from configs import (DAYS_BEFORE_MONTH_END, LONG_LINE, MISFIRE_GRACE_TIME,
+                     NODE_CONFIG_FILEPATH, RETRY_INTERVAL)
 from tools import db
 from tools.exceptions import NotTimeForBountyException
 from tools.helper import (MsgIcon, Notifier, call_retry,
@@ -79,7 +79,7 @@ class BountyCollector:
         next_reward_date = last_reward_date + relativedelta(months=1)
         last_reward_day = last_reward_date.day
         days_in_next_month = calendar.monthrange(next_reward_date.year, next_reward_date.month)[1]
-        next_reward_day = min(last_reward_day, days_in_next_month - 5)
+        next_reward_day = min(last_reward_day, days_in_next_month - DAYS_BEFORE_MONTH_END)
         next_reward_date = next_reward_date.replace(day=next_reward_day)
         print(last_reward_date)
         print(next_reward_date)
