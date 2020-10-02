@@ -25,7 +25,8 @@ import logging
 import socket
 import time
 from datetime import datetime, timedelta
-
+import calendar
+from dateutil.relativedelta import relativedelta
 import tenacity
 from apscheduler.events import EVENT_JOB_ERROR, EVENT_JOB_EXECUTED
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -69,13 +70,21 @@ class BountyCollector:
 
     def get_reward_date(self):
         try:
-            reward_period = call_retry(self.skale.constants_holder.get_reward_period)
+            # reward_period = call_retry(self.skale.constants_holder.get_reward_period)
             node_info = call_retry(self.skale.nodes.get, self.id)
         except Exception as err:
             self.notifier.send(f'Cannot get reward date from SKALE Manager: {err}', MsgIcon.ERROR)
             raise
-        reward_date = node_info['last_reward_date'] + reward_period
-        return datetime.utcfromtimestamp(reward_date)
+
+        last_reward_date = datetime.utcfromtimestamp(node_info['last_reward_date'])
+        next_reward_date = last_reward_date + relativedelta(months=1)
+        last_reward_day = last_reward_date.day
+        days_in_next_month = calendar.monthrange(next_reward_date.year, next_reward_date.month)[1]
+        next_reward_day = min(last_reward_day, days_in_next_month - 5)
+        next_reward_date = next_reward_date.replace(day=next_reward_day)
+        print(last_reward_date)
+        print(next_reward_date)
+        return next_reward_date
 
     def get_bounty(self):
         try:
