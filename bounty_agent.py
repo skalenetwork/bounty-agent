@@ -90,7 +90,7 @@ class BountyCollector:
         self.logger.info(LONG_LINE)
         self.logger.info('The bounty was successfully received')
 
-        h_receipt = self.skale.manager.contract.events.BountyGot().processReceipt(
+        h_receipt = self.skale.manager.contract.events.BountyReceived().processReceipt(
             tx_res.receipt, errors=DISCARD)
         self.logger.info(h_receipt)
         args = h_receipt[0]['args']
