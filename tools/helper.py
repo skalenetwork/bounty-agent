@@ -36,6 +36,7 @@ logger = logging.getLogger(__name__)
 call_retry = tenacity.Retrying(stop=tenacity.stop_after_attempt(10),
                                wait=tenacity.wait_fixed(2),
                                reraise=True)
+_config_first_read = True
 
 
 def init_skale():
@@ -58,14 +59,17 @@ def check_if_node_is_registered(skale, node_id):
         FileNotFoundError))
 def get_id_from_config(node_config_filepath) -> int:
     """Gets node ID from config file for agent initialization."""
+    global _config_first_read
     try:
         logger.debug('Reading node id from config file...')
         with open(node_config_filepath) as json_file:
             data = json.load(json_file)
         return data['node_id']
     except (FileNotFoundError, KeyError) as err:
-        logger.warning(
-            'Cannot read a node id from config file - is the node already registered?')
+        if _config_first_read or True:
+            logger.warning(
+                'Cannot read a node id from config file - is the node already registered?')
+            _config_first_read = False
         raise err
 
 
