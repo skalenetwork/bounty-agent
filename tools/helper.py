@@ -21,7 +21,7 @@ import json
 import logging
 import os
 from enum import Enum
-
+import re
 import requests
 import tenacity
 from skale import Skale
@@ -110,3 +110,8 @@ class Notifier:
             return 1
         logger.debug('Message to validator was sent successfully')
         return 0
+
+
+def get_agent_name(name):
+    name_parts = re.findall('[A-Z][^A-Z]*', name)
+    return '-'.join(name_parts).lower()

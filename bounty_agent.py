@@ -38,17 +38,16 @@ from tools import db
 from tools.exceptions import NotTimeForBountyException
 from tools.helper import (MsgIcon, Notifier, call_retry,
                           check_if_node_is_registered, get_id_from_config,
-                          init_skale)
+                          init_skale, get_agent_name)
 from tools.logger import init_agent_logger
 
 
 class BountyCollector:
 
     def __init__(self, skale, node_id=None):
-        self.agent_name = self.__class__.__name__.lower()
+        self.agent_name = get_agent_name(self.__class__.__name__)
         init_agent_logger(self.agent_name, node_id)
         self.logger = logging.getLogger(self.agent_name)
-
         self.logger.info(f'Initialization of {self.agent_name} ...')
         if node_id is None:
             self.id = get_id_from_config(NODE_CONFIG_FILEPATH)
@@ -60,12 +59,13 @@ class BountyCollector:
 
         node_info = call_retry(self.skale.nodes.get, self.id)
         self.notifier = Notifier(node_info['name'], self.id, socket.inet_ntoa(node_info['ip']))
-        self.notifier.send('Bounty agent started', icon=MsgIcon.INFO)
         self.is_stopped = False
         self.scheduler = BackgroundScheduler(
             timezone='UTC',
             job_defaults={'coalesce': True, 'misfire_grace_time': MISFIRE_GRACE_TIME})
         self.logger.info(f'Initialization of {self.agent_name} is completed. Node ID = {self.id}')
+        self.notifier.send(f'{self.agent_name} started successfully on a node with ID = {self.id}',
+                           icon=MsgIcon.INFO)
 
     def get_reward_date(self):
         try:
