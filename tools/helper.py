@@ -66,7 +66,7 @@ def get_id_from_config(node_config_filepath) -> int:
             data = json.load(json_file)
         return data['node_id']
     except (FileNotFoundError, KeyError) as err:
-        if _config_first_read or True:
+        if _config_first_read:
             logger.warning(
                 'Cannot read a node id from config file - is the node already registered?')
             _config_first_read = False
@@ -93,8 +93,8 @@ class Notifier:
         message_data = {"message": [header, message]}
         try:
             response = requests.post(url=NOTIFIER_URL, json=message_data)
-        except requests.exceptions.ConnectionError as err:
-            logger.info(f'Could not connect to {NOTIFIER_URL}. {err}')
+        except requests.exceptions.ConnectionError:
+            logger.info(f'Cannot send Telegram notification (failed to connect to {NOTIFIER_URL})')
             return 1
         except Exception as err:
             logger.info(f'Cannot notify validator {NOTIFIER_URL}. {err}')

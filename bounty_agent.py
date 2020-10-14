@@ -64,7 +64,7 @@ class BountyAgent:
         self.scheduler = BackgroundScheduler(
             timezone='UTC',
             job_defaults={'coalesce': True, 'misfire_grace_time': MISFIRE_GRACE_TIME})
-        self.notifier.send(f'Bounty Agent started successfully on a node with ID = {self.id}',
+        self.notifier.send(f'{self.agent_name} started successfully with a node ID = {self.id}',
                            icon=MsgIcon.INFO)
 
     def get_reward_date(self):
