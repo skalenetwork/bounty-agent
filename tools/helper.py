@@ -82,8 +82,8 @@ class MsgIcon(Enum):
 
 
 class Notifier:
-    def __init__(self, node_name, node_id, node_ip):
-        self.header = f'Container: bounty-agent, Node: {node_name}, ' \
+    def __init__(self, cont_name, node_name, node_id, node_ip):
+        self.header = f'Container: {cont_name}, Node: {node_name}, ' \
                       f'ID: {node_id}, IP: {node_ip}\n'
 
     def send(self, message, icon=MsgIcon.ERROR):
@@ -91,7 +91,6 @@ class Notifier:
         logger.info(message)
         header = f'{icon.value} {self.header}'
         message_data = {"message": [header, message]}
-
         try:
             response = requests.post(url=NOTIFIER_URL, json=message_data)
         except requests.exceptions.ConnectionError as err:

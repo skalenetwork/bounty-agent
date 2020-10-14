@@ -58,13 +58,13 @@ class BountyAgent:
         check_if_node_is_registered(self.skale, self.id)
 
         node_info = call_retry(self.skale.nodes.get, self.id)
-        self.notifier = Notifier(node_info['name'], self.id, socket.inet_ntoa(node_info['ip']))
+        self.notifier = Notifier(self.agent_name, node_info['name'],
+                                 self.id, socket.inet_ntoa(node_info['ip']))
         self.is_stopped = False
         self.scheduler = BackgroundScheduler(
             timezone='UTC',
             job_defaults={'coalesce': True, 'misfire_grace_time': MISFIRE_GRACE_TIME})
-        self.logger.info(f'Initialization of {self.agent_name} is completed. Node ID = {self.id}')
-        self.notifier.send(f'{self.agent_name} started successfully on a node with ID = {self.id}',
+        self.notifier.send(f'Bounty Agent started successfully on a node with ID = {self.id}',
                            icon=MsgIcon.INFO)
 
     def get_reward_date(self):
