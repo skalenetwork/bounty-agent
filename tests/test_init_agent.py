@@ -20,6 +20,7 @@
 import json
 
 import pytest
+
 from bounty_agent import BountyAgent
 from configs import NODE_CONFIG_FILEPATH
 from tools.exceptions import NodeNotFoundException

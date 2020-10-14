@@ -20,10 +20,11 @@
 import time
 from datetime import datetime
 
-import bounty_agent
 import pytest
-from configs import RETRY_INTERVAL
 from skale.transactions.result import TransactionError
+
+import bounty_agent
+from configs import RETRY_INTERVAL
 from tests.prepare_validator import TEST_DELTA, TEST_EPOCH, get_active_ids
 from tools import db
 from tools.exceptions import NodeNotFoundException

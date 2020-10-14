@@ -20,8 +20,9 @@
 import json
 import logging
 import os
-from enum import Enum
 import re
+from enum import Enum
+
 import requests
 import tenacity
 from skale import Skale

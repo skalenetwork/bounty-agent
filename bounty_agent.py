@@ -37,8 +37,8 @@ from configs import (LONG_LINE, MISFIRE_GRACE_TIME, NODE_CONFIG_FILEPATH,
 from tools import db
 from tools.exceptions import NotTimeForBountyException
 from tools.helper import (MsgIcon, Notifier, call_retry,
-                          check_if_node_is_registered, get_id_from_config,
-                          init_skale, get_agent_name)
+                          check_if_node_is_registered, get_agent_name,
+                          get_id_from_config, init_skale)
 from tools.logger import init_agent_logger
 
 
