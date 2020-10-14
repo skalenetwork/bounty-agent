@@ -27,7 +27,7 @@ import tenacity
 from skale import Skale
 from skale.wallets import RPCWallet
 
-from configs import NOTIFIER_URL
+from configs import CONFIG_CHECK_PERIOD, NOTIFIER_URL
 from configs.web3 import ABI_FILEPATH, ENDPOINT
 from tools.exceptions import NodeNotFoundException
 
@@ -44,6 +44,11 @@ def init_skale():
     return Skale(ENDPOINT, ABI_FILEPATH, wallet)
 
 
+def get_agent_name(name):
+    name_parts = re.findall('[A-Z][^A-Z]*', name)
+    return '-'.join(name_parts).lower()
+
+
 def check_if_node_is_registered(skale, node_id):
     if 0 <= node_id < skale.nodes.get_nodes_number():
         return True
@@ -54,7 +59,7 @@ def check_if_node_is_registered(skale, node_id):
 
 
 @tenacity.retry(
-    wait=tenacity.wait_fixed(20),
+    wait=tenacity.wait_fixed(CONFIG_CHECK_PERIOD),
     retry=tenacity.retry_if_exception_type(KeyError) | tenacity.retry_if_exception_type(
         FileNotFoundError))
 def get_id_from_config(node_config_filepath) -> int:
@@ -109,8 +114,3 @@ class Notifier:
             return 1
         logger.debug('Message to validator was sent successfully')
         return 0
-
-
-def get_agent_name(name):
-    name_parts = re.findall('[A-Z][^A-Z]*', name)
-    return '-'.join(name_parts).lower()
