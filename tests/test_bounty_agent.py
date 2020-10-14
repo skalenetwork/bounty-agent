@@ -38,7 +38,7 @@ def cur_node_id(skale):
 
 @pytest.fixture(scope="module")
 def bounty_collector(skale, cur_node_id):
-    return bounty_agent.BountyCollector(skale, cur_node_id)
+    return bounty_agent.BountyAgent(skale, cur_node_id)
 
 
 def test_check_if_node_is_registered(skale, cur_node_id):
@@ -82,7 +82,7 @@ def test_run_agent(skale, cur_node_id):
     block_data = skale.web3.eth.getBlock(last_block_number)
     block_timestamp = datetime.utcfromtimestamp(block_data['timestamp'])
     db.clear_all_bounty_receipts()
-    bounty_collector = bounty_agent.BountyCollector(skale, cur_node_id)
+    bounty_collector = bounty_agent.BountyAgent(skale, cur_node_id)
     reward_date = bounty_collector.get_reward_date()
     print(f'Reward date: {reward_date}')
     print(f'Timestamp: {block_timestamp}')

@@ -42,7 +42,7 @@ from tools.helper import (MsgIcon, Notifier, call_retry,
 from tools.logger import init_agent_logger
 
 
-class BountyCollector:
+class BountyAgent:
 
     def __init__(self, skale, node_id=None):
         self.agent_name = get_agent_name(self.__class__.__name__)
@@ -158,7 +158,7 @@ class BountyCollector:
 
 if __name__ == '__main__':
     skale = init_skale()
-    bounty_agent = BountyCollector(skale)
+    bounty_agent = BountyAgent(skale)
     bounty_agent.run()
     while not bounty_agent.is_stopped:
         time.sleep(1)
