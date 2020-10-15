@@ -4,8 +4,11 @@ import pytest
 from skale import Skale
 from skale.utils.web3_utils import init_web3
 from skale.wallets import Web3Wallet
-from tests.constants import ENDPOINT, ETH_PRIVATE_KEY, N_TEST_NODES, TEST_ABI_FILEPATH
-from tests.prepare_validator import create_dirs, create_set_of_nodes, get_active_ids
+
+from tests.constants import (ENDPOINT, ETH_PRIVATE_KEY, N_TEST_NODES,
+                             TEST_ABI_FILEPATH)
+from tests.prepare_validator import (create_dirs, create_set_of_nodes,
+                                     get_active_ids)
 
 
 @pytest.fixture(scope="session")

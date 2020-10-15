@@ -37,18 +37,17 @@ from configs import (LONG_LINE, MISFIRE_GRACE_TIME, NODE_CONFIG_FILEPATH,
 from tools import db
 from tools.exceptions import NotTimeForBountyException
 from tools.helper import (MsgIcon, Notifier, call_retry,
-                          check_if_node_is_registered, get_id_from_config,
-                          init_skale)
+                          check_if_node_is_registered, get_agent_name,
+                          get_id_from_config, init_skale)
 from tools.logger import init_agent_logger
 
 
-class BountyCollector:
+class BountyAgent:
 
     def __init__(self, skale, node_id=None):
-        self.agent_name = self.__class__.__name__.lower()
+        self.agent_name = get_agent_name(self.__class__.__name__)
         init_agent_logger(self.agent_name, node_id)
         self.logger = logging.getLogger(self.agent_name)
-
         self.logger.info(f'Initialization of {self.agent_name} ...')
         if node_id is None:
             self.id = get_id_from_config(NODE_CONFIG_FILEPATH)
@@ -59,13 +58,14 @@ class BountyCollector:
         check_if_node_is_registered(self.skale, self.id)
 
         node_info = call_retry(self.skale.nodes.get, self.id)
-        self.notifier = Notifier(node_info['name'], self.id, socket.inet_ntoa(node_info['ip']))
-        self.notifier.send('Bounty agent started', icon=MsgIcon.INFO)
+        self.notifier = Notifier(self.agent_name, node_info['name'],
+                                 self.id, socket.inet_ntoa(node_info['ip']))
         self.is_stopped = False
         self.scheduler = BackgroundScheduler(
             timezone='UTC',
             job_defaults={'coalesce': True, 'misfire_grace_time': MISFIRE_GRACE_TIME})
-        self.logger.info(f'Initialization of {self.agent_name} is completed. Node ID = {self.id}')
+        self.notifier.send(f'{self.agent_name} started successfully with a node ID = {self.id}',
+                           icon=MsgIcon.INFO)
 
     def get_reward_date(self):
         try:
@@ -158,7 +158,7 @@ class BountyCollector:
 
 if __name__ == '__main__':
     skale = init_skale()
-    bounty_agent = BountyCollector(skale)
+    bounty_agent = BountyAgent(skale)
     bounty_agent.run()
     while not bounty_agent.is_stopped:
         time.sleep(1)
