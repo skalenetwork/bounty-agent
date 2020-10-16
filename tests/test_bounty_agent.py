@@ -19,8 +19,9 @@
 
 import time
 from datetime import datetime
-from freezegun import freeze_time
+
 import pytest
+from freezegun import freeze_time
 from skale.transactions.result import TransactionError
 
 import bounty_agent
