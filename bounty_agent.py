@@ -69,12 +69,11 @@ class BountyAgent:
 
     def get_reward_date(self):
         try:
-            reward_period = call_retry(self.skale.constants_holder.get_reward_period)
-            node_info = call_retry(self.skale.nodes.get, self.id)
+            reward_date = call_retry(
+                self.skale.nodes.contract.functions.getNodeNextRewardDate(self.id).call)
         except Exception as err:
             self.notifier.send(f'Cannot get reward date from SKALE Manager: {err}', MsgIcon.ERROR)
             raise
-        reward_date = node_info['last_reward_date'] + reward_period
         return datetime.utcfromtimestamp(reward_date)
 
     def get_bounty(self):

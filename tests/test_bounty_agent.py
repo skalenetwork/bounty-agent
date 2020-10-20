@@ -21,11 +21,12 @@ import time
 from datetime import datetime
 
 import pytest
+from freezegun import freeze_time
 from skale.transactions.result import TransactionError
 
 import bounty_agent
 from configs import RETRY_INTERVAL
-from tests.prepare_validator import TEST_DELTA, TEST_EPOCH, get_active_ids
+from tests.prepare_validator import get_active_ids, go_to_date
 from tools import db
 from tools.exceptions import NodeNotFoundException
 from tools.helper import check_if_node_is_registered
@@ -62,35 +63,25 @@ def test_get_bounty_neg(skale, bounty_collector):
 
 
 def test_bounty_job_saves_data(skale, bounty_collector):
-    time.sleep(TEST_EPOCH - TEST_DELTA)
-    last_block_number = skale.web3.eth.blockNumber
-    block_data = skale.web3.eth.getBlock(last_block_number)
-    block_timestamp = datetime.utcfromtimestamp(block_data['timestamp'])
-    reward_date = bounty_collector.get_reward_date()
-    print(f'Reward date: {reward_date}')
-    print(f'Timestamp: {block_timestamp}')
-    print(f'Sleep for {TEST_DELTA} sec')
-    time.sleep(TEST_DELTA)
-
     db.clear_all_bounty_receipts()
+    reward_date = skale.nodes.contract.functions.getNodeNextRewardDate(bounty_collector.id).call()
+    print(f'Reward date: {reward_date}')
+    go_to_date(skale.web3, reward_date)
     bounty_collector.job()
 
     assert db.get_count_of_bounty_receipt_records() == 1
 
 
 def test_run_agent(skale, cur_node_id):
-    last_block_number = skale.web3.eth.blockNumber
-    block_data = skale.web3.eth.getBlock(last_block_number)
-    block_timestamp = datetime.utcfromtimestamp(block_data['timestamp'])
-    db.clear_all_bounty_receipts()
     bounty_collector = bounty_agent.BountyAgent(skale, cur_node_id)
-    reward_date = bounty_collector.get_reward_date()
+    reward_date = skale.nodes.contract.functions.getNodeNextRewardDate(bounty_collector.id).call()
     print(f'Reward date: {reward_date}')
-    print(f'Timestamp: {block_timestamp}')
-
+    go_to_date(skale.web3, reward_date)
     db.clear_all_bounty_receipts()
-    bounty_collector.run()
-    print(f'Sleep for {TEST_EPOCH + TEST_DELTA + RETRY_INTERVAL} sec')
-    time.sleep(TEST_EPOCH + TEST_DELTA + RETRY_INTERVAL)
-    bounty_collector.stop()
+
+    with freeze_time(datetime.utcfromtimestamp(reward_date)):
+        bounty_collector.run()
+        print(f'Sleep for {RETRY_INTERVAL} sec')
+        time.sleep(RETRY_INTERVAL)
+        bounty_collector.stop()
     assert db.get_count_of_bounty_receipt_records() == 1
