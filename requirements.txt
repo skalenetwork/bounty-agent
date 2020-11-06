@@ -1,6 +1,6 @@
-skale.py==4.1.dev0
+skale.py==4.1.dev11
 schedule==0.6.0
 tenacity==6.2.0
 apscheduler==3.6.3
 peewee==3.13.3
-PyMySQL==0.10.0
+PyMySQL==0.10.1

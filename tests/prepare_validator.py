@@ -1,11 +1,13 @@
 import os
+from datetime import datetime
 
 from skale import Skale
 from skale.utils.web3_utils import init_web3
 from skale.wallets import Web3Wallet
-from tests.constants import (
-    D_VALIDATOR_DESC, D_VALIDATOR_FEE, D_VALIDATOR_ID, D_VALIDATOR_MIN_DEL, D_VALIDATOR_NAME,
-    ENDPOINT, ETH_PRIVATE_KEY, TEST_ABI_FILEPATH, TEST_DELTA, TEST_EPOCH)
+
+from tests.constants import (D_VALIDATOR_DESC, D_VALIDATOR_FEE, D_VALIDATOR_ID,
+                             D_VALIDATOR_MIN_DEL, D_VALIDATOR_NAME, ENDPOINT,
+                             ETH_PRIVATE_KEY, TEST_ABI_FILEPATH)
 
 IP_BASE = '10.1.0.'
 TEST_PORT = 123
@@ -30,20 +32,23 @@ def setup_validator(skale):
         create_validator(skale)
         enable_validator(skale)
     set_test_msr(skale, msr=0)
-    accelerate_skale_manager(skale)
 
 
-def accelerate_skale_manager(skale, test_epoch=TEST_EPOCH, test_delta=TEST_DELTA):
+def get_block_timestamp(web3):
+    last_block_number = web3.eth.blockNumber
+    block_data = web3.eth.getBlock(last_block_number)
+    return block_data['timestamp']
 
-    reward_period = skale.constants_holder.get_reward_period()
-    delta_period = skale.constants_holder.get_delta_period()
-    print(f'Existing times for SKALE Manager: {reward_period}, {delta_period}')
 
-    tx_res = skale.constants_holder.set_periods(test_epoch, test_delta, wait_for=True)
-    assert tx_res.receipt['status'] == 1
-    reward_period = skale.constants_holder.get_reward_period()
-    delta_period = skale.constants_holder.get_delta_period()
-    print(f'New time values for SKALE Manager: {reward_period}, {delta_period}')
+def go_to_date(web3, date):
+    block_timestamp = get_block_timestamp(web3)
+    print(f'Block timestamp before: {datetime.utcfromtimestamp(block_timestamp)}')
+    delta = date - block_timestamp
+
+    skip_evm_time(web3, delta)
+
+    block_timestamp = get_block_timestamp(web3)
+    print(f'Block timestamp after: {datetime.utcfromtimestamp(block_timestamp)}')
 
 
 def set_test_msr(skale, msr=D_VALIDATOR_MIN_DEL):
@@ -97,6 +102,13 @@ def create_set_of_nodes(skale, first_node_id, nodes_number=2):
             create_node(skale, node_id)
     else:
         print(f'Node with id = {first_node_id} is already exists! Try another start id...')
+
+
+def skip_evm_time(web3, seconds) -> int:
+    """For test purposes only, works only with ganache node"""
+    res = web3.provider.make_request("evm_increaseTime", [seconds])
+    web3.provider.make_request("evm_mine", [])
+    return res['result']
 
 
 def init_skale():
