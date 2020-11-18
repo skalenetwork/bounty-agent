@@ -37,18 +37,17 @@ from configs import (LONG_LINE, MISFIRE_GRACE_TIME, NODE_CONFIG_FILEPATH,
 from tools import db
 from tools.exceptions import NotTimeForBountyException
 from tools.helper import (MsgIcon, Notifier, call_retry,
-                          check_if_node_is_registered, get_id_from_config,
-                          init_skale)
+                          check_if_node_is_registered, get_agent_name,
+                          get_id_from_config, init_skale)
 from tools.logger import init_agent_logger
 
 
-class BountyCollector:
+class BountyAgent:
 
     def __init__(self, skale, node_id=None):
-        self.agent_name = self.__class__.__name__.lower()
+        self.agent_name = get_agent_name(self.__class__.__name__)
         init_agent_logger(self.agent_name, node_id)
         self.logger = logging.getLogger(self.agent_name)
-
         self.logger.info(f'Initialization of {self.agent_name} ...')
         if node_id is None:
             self.id = get_id_from_config(NODE_CONFIG_FILEPATH)
@@ -59,22 +58,22 @@ class BountyCollector:
         check_if_node_is_registered(self.skale, self.id)
 
         node_info = call_retry(self.skale.nodes.get, self.id)
-        self.notifier = Notifier(node_info['name'], self.id, socket.inet_ntoa(node_info['ip']))
-        self.notifier.send('Bounty agent started', icon=MsgIcon.INFO)
+        self.notifier = Notifier(self.agent_name, node_info['name'],
+                                 self.id, socket.inet_ntoa(node_info['ip']))
         self.is_stopped = False
         self.scheduler = BackgroundScheduler(
             timezone='UTC',
             job_defaults={'coalesce': True, 'misfire_grace_time': MISFIRE_GRACE_TIME})
-        self.logger.info(f'Initialization of {self.agent_name} is completed. Node ID = {self.id}')
+        self.notifier.send(f'{self.agent_name} started successfully with a node ID = {self.id}',
+                           icon=MsgIcon.INFO)
 
     def get_reward_date(self):
         try:
-            reward_period = call_retry(self.skale.constants_holder.get_reward_period)
-            node_info = call_retry(self.skale.nodes.get, self.id)
+            reward_date = call_retry(
+                self.skale.nodes.contract.functions.getNodeNextRewardDate(self.id).call)
         except Exception as err:
             self.notifier.send(f'Cannot get reward date from SKALE Manager: {err}', MsgIcon.ERROR)
             raise
-        reward_date = node_info['last_reward_date'] + reward_period
         return datetime.utcfromtimestamp(reward_date)
 
     def get_bounty(self):
@@ -90,7 +89,7 @@ class BountyCollector:
         self.logger.info(LONG_LINE)
         self.logger.info('The bounty was successfully received')
 
-        h_receipt = self.skale.manager.contract.events.BountyGot().processReceipt(
+        h_receipt = self.skale.manager.contract.events.BountyReceived().processReceipt(
             tx_res.receipt, errors=DISCARD)
         self.logger.info(h_receipt)
         args = h_receipt[0]['args']
@@ -115,8 +114,8 @@ class BountyCollector:
         last_block_number = self.skale.web3.eth.blockNumber
         block_data = call_retry.call(self.skale.web3.eth.getBlock, last_block_number)
         block_timestamp = datetime.utcfromtimestamp(block_data['timestamp'])
-        self.logger.info(f'Current reward time: {reward_date}')
-        self.logger.info(f'Block timestamp now: {block_timestamp}')
+        self.logger.info(f'Next reward date: {reward_date}')
+        self.logger.info(f'Block timestamp:  {block_timestamp}')
         if reward_date > block_timestamp:
             self.logger.info('Current block timestamp is less than reward time. Will try in 1 min')
             raise NotTimeForBountyException(Exception)
@@ -131,7 +130,7 @@ class BountyCollector:
         else:
             self.logger.debug('The job finished successfully)')
             reward_date = self.get_reward_date()
-            self.logger.debug(f'Reward date after job: {reward_date}')
+            self.logger.info(f'Next reward date after job: {reward_date}')
             utc_now = datetime.utcnow()
             if utc_now > reward_date:
                 self.logger.debug('Changing reward time by current time')
@@ -142,7 +141,7 @@ class BountyCollector:
     def run(self) -> None:
         """Starts agent."""
         reward_date = self.get_reward_date()
-        self.logger.debug(f'Reward date on agent\'s start: {reward_date}')
+        self.logger.info(f'Next reward date on agent\'s start: {reward_date}')
         utc_now = datetime.utcnow()
         if utc_now > reward_date:
             reward_date = utc_now
@@ -158,7 +157,7 @@ class BountyCollector:
 
 if __name__ == '__main__':
     skale = init_skale()
-    bounty_agent = BountyCollector(skale)
+    bounty_agent = BountyAgent(skale)
     bounty_agent.run()
     while not bounty_agent.is_stopped:
         time.sleep(1)

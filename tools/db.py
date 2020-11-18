@@ -18,8 +18,10 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
+from peewee import (CharField, DateTimeField, IntegerField, Model,
+                    MySQLDatabase, fn)
+
 from configs.db import DB_HOST, DB_NAME, DB_PASSWORD, DB_PORT, DB_USER
-from peewee import CharField, DateTimeField, IntegerField, Model, MySQLDatabase, fn
 
 db = MySQLDatabase(
     DB_NAME, user=DB_USER,
