@@ -29,7 +29,7 @@ jobs:
         echo "VERSION=$VERSION" >> $GITHUB_ENV
         echo "Version $VERSION"
         export RELEASE=true
-        echo "::set-env name=RELEASE::$RELEASE"
+        echo "$RELEASE=$$RELEASE" >> $GITHUB_ENV
         bash ./scripts/build_and_publish.sh
     - name: Checkout code
       uses: actions/checkout@master
