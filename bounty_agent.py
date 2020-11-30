@@ -82,27 +82,29 @@ class BountyAgent:
         except TransactionError as err:
             self.notifier.send(str(err), MsgIcon.CRITICAL)
             raise
-
+        self.logger.info('The bounty was successfully received')
         self.logger.debug(f'Receipt: {tx_res.receipt}')
-
         tx_hash = tx_res.receipt['transactionHash'].hex()
         self.logger.info(LONG_LINE)
-        self.logger.info('The bounty was successfully received')
 
-        h_receipt = self.skale.manager.contract.events.BountyReceived().processReceipt(
-            tx_res.receipt, errors=DISCARD)
-        self.logger.info(h_receipt)
-        args = h_receipt[0]['args']
-        bounty_in_skl = self.skale.web3.fromWei(args["bounty"], 'ether')
-        self.notifier.send(f'Bounty awarded to node: {bounty_in_skl:.3f} SKL', MsgIcon.BOUNTY)
         try:
-            db.save_bounty_event(datetime.utcfromtimestamp(args['time']), str(tx_hash),
-                                 tx_res.receipt['blockNumber'], args['nodeIndex'],
-                                 args['bounty'], args['averageDowntime'],
-                                 args['averageLatency'], tx_res.receipt['gasUsed'])
+            h_receipt = self.skale.manager.contract.events.BountyReceived().processReceipt(
+                tx_res.receipt, errors=DISCARD)
+            self.logger.info(h_receipt)
+            args = h_receipt[0]['args']
+            bounty_in_skl = self.skale.web3.fromWei(args["bounty"], 'ether')
         except Exception as err:
-            self.logger.error(f'Cannot save getBounty event data to db. Error: {err}')
-
+            self.notifier.send(f'Bounty was received, but reward amount cannot be read from '
+                               f'tx receipt: {err}', MsgIcon.WARNING)
+        else:
+            self.notifier.send(f'Bounty awarded to node: {bounty_in_skl:.3f} SKL', MsgIcon.BOUNTY)
+            try:
+                db.save_bounty_event(datetime.utcfromtimestamp(args['time']), str(tx_hash),
+                                     tx_res.receipt['blockNumber'], args['nodeIndex'],
+                                     args['bounty'], args['averageDowntime'],
+                                     args['averageLatency'], tx_res.receipt['gasUsed'])
+            except Exception as err:
+                self.logger.error(f'Cannot save getBounty event data to db. Error: {err}')
         return tx_res.receipt['status']
 
     @tenacity.retry(wait=tenacity.wait_fixed(RETRY_INTERVAL),
