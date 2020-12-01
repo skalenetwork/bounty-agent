@@ -32,8 +32,8 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from skale.transactions.result import TransactionError
 from web3.logs import DISCARD
 
-from configs import (LONG_LINE, MISFIRE_GRACE_TIME, NODE_CONFIG_FILEPATH,
-                     RETRY_INTERVAL, DELAY_AFTER_ERR)
+from configs import (DELAY_AFTER_ERR, LONG_LINE, MISFIRE_GRACE_TIME,
+                     NODE_CONFIG_FILEPATH, RETRY_INTERVAL)
 from tools import db
 from tools.exceptions import NotTimeForBountyException
 from tools.helper import (MsgIcon, Notifier, call_retry,
