@@ -111,7 +111,7 @@ class BountyAgent:
                     retry=tenacity.retry_if_exception_type(NotTimeForBountyException))
     def job(self) -> None:
         """Periodic job."""
-        self.logger.debug('Job started')
+        self.logger.debug('"Get Bounty" job started')
         reward_date = self.get_reward_date()
         last_block_number = self.skale.web3.eth.blockNumber
         block_data = call_retry.call(self.skale.web3.eth.getBlock, last_block_number)
@@ -125,20 +125,20 @@ class BountyAgent:
 
     def job_listener(self, event):
         if event.exception:
-            self.logger.info('The job failed')
+            self.logger.info('"Get Bounty" job failed')
             utc_now = datetime.utcnow()
             self.scheduler.add_job(self.job,
                                    'date',
                                    run_date=utc_now + timedelta(seconds=DELAY_AFTER_ERR))
             self.logger.debug(self.scheduler.get_jobs())
         else:
-            self.logger.debug('The job finished successfully)')
+            self.logger.debug('"Get Bounty" job finished successfully)')
             try:
                 reward_date = self.get_reward_date()
-                self.logger.info(f'Next reward date after job: {reward_date}')
+                self.logger.info(f'Next reward date after getBounty job: {reward_date}')
             except Exception:
                 reward_date = datetime.utcnow() + timedelta(seconds=DELAY_AFTER_ERR)
-                self.logger.info(f'Next try - at {reward_date}')
+                self.logger.info(f'Next try to get reward date: {reward_date}')
             self.scheduler.add_job(self.job, 'date', run_date=reward_date)
             self.scheduler.print_jobs()
 
