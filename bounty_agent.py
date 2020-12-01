@@ -131,12 +131,12 @@ class BountyAgent:
             self.logger.debug(self.scheduler.get_jobs())
         else:
             self.logger.debug('The job finished successfully)')
-            reward_date = self.get_reward_date()
-            self.logger.info(f'Next reward date after job: {reward_date}')
-            utc_now = datetime.utcnow()
-            if utc_now > reward_date:
-                self.logger.debug('Changing reward time by current time')
-                reward_date = utc_now
+            try:
+                reward_date = self.get_reward_date()
+                self.logger.info(f'Next reward date after job: {reward_date}')
+            except Exception:
+                reward_date = datetime.utcnow() + timedelta(seconds=60)
+                self.logger.info(f'Next try - at {reward_date}')
             self.scheduler.add_job(self.job, 'date', run_date=reward_date)
             self.scheduler.print_jobs()
 
