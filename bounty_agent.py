@@ -33,7 +33,7 @@ from skale.transactions.result import TransactionError
 from web3.logs import DISCARD
 
 from configs import (LONG_LINE, MISFIRE_GRACE_TIME, NODE_CONFIG_FILEPATH,
-                     RETRY_INTERVAL)
+                     RETRY_INTERVAL, DELAY_AFTER_ERR)
 from tools import db
 from tools.exceptions import NotTimeForBountyException
 from tools.helper import (MsgIcon, Notifier, call_retry,
@@ -127,7 +127,9 @@ class BountyAgent:
         if event.exception:
             self.logger.info('The job failed')
             utc_now = datetime.utcnow()
-            self.scheduler.add_job(self.job, 'date', run_date=utc_now + timedelta(seconds=60))
+            self.scheduler.add_job(self.job,
+                                   'date',
+                                   run_date=utc_now + timedelta(seconds=DELAY_AFTER_ERR))
             self.logger.debug(self.scheduler.get_jobs())
         else:
             self.logger.debug('The job finished successfully)')
@@ -135,7 +137,7 @@ class BountyAgent:
                 reward_date = self.get_reward_date()
                 self.logger.info(f'Next reward date after job: {reward_date}')
             except Exception:
-                reward_date = datetime.utcnow() + timedelta(seconds=60)
+                reward_date = datetime.utcnow() + timedelta(seconds=DELAY_AFTER_ERR)
                 self.logger.info(f'Next try - at {reward_date}')
             self.scheduler.add_job(self.job, 'date', run_date=reward_date)
             self.scheduler.print_jobs()
