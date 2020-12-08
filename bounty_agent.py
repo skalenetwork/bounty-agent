@@ -32,8 +32,8 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from skale.transactions.result import TransactionError
 from web3.logs import DISCARD
 
-from configs import (LONG_LINE, MISFIRE_GRACE_TIME, NODE_CONFIG_FILEPATH,
-                     RETRY_INTERVAL)
+from configs import (DELAY_AFTER_ERR, LONG_LINE, MISFIRE_GRACE_TIME,
+                     NODE_CONFIG_FILEPATH, RETRY_INTERVAL)
 from tools import db
 from tools.exceptions import NotTimeForBountyException
 from tools.helper import (MsgIcon, Notifier, call_retry,
@@ -82,34 +82,37 @@ class BountyAgent:
         except TransactionError as err:
             self.notifier.send(str(err), MsgIcon.CRITICAL)
             raise
-
+        self.logger.info('The bounty was successfully received')
         self.logger.debug(f'Receipt: {tx_res.receipt}')
-
         tx_hash = tx_res.receipt['transactionHash'].hex()
         self.logger.info(LONG_LINE)
-        self.logger.info('The bounty was successfully received')
 
-        h_receipt = self.skale.manager.contract.events.BountyReceived().processReceipt(
-            tx_res.receipt, errors=DISCARD)
-        self.logger.info(h_receipt)
-        args = h_receipt[0]['args']
-        bounty_in_skl = self.skale.web3.fromWei(args["bounty"], 'ether')
-        self.notifier.send(f'Bounty awarded to node: {bounty_in_skl:.3f} SKL', MsgIcon.BOUNTY)
         try:
-            db.save_bounty_event(datetime.utcfromtimestamp(args['time']), str(tx_hash),
-                                 tx_res.receipt['blockNumber'], args['nodeIndex'],
-                                 args['bounty'], args['averageDowntime'],
-                                 args['averageLatency'], tx_res.receipt['gasUsed'])
+            h_receipt = self.skale.manager.contract.events.BountyReceived().processReceipt(
+                tx_res.receipt, errors=DISCARD)
+            self.logger.info(h_receipt)
+            args = h_receipt[0]['args']
+            bounty_in_skl = self.skale.web3.fromWei(args["bounty"], 'ether')
         except Exception as err:
-            self.logger.error(f'Cannot save getBounty event data to db. Error: {err}')
-
+            self.notifier.send('Bounty was received, but reward amount cannot be read from '
+                               'tx receipt', MsgIcon.WARNING)
+            self.logger.exception(err)
+        else:
+            self.notifier.send(f'Bounty awarded to node: {bounty_in_skl:.3f} SKL', MsgIcon.BOUNTY)
+            try:
+                db.save_bounty_event(datetime.utcfromtimestamp(args['time']), str(tx_hash),
+                                     tx_res.receipt['blockNumber'], args['nodeIndex'],
+                                     args['bounty'], args['averageDowntime'],
+                                     args['averageLatency'], tx_res.receipt['gasUsed'])
+            except Exception as err:
+                self.logger.error(f'Cannot save getBounty event data to db. Error: {err}')
         return tx_res.receipt['status']
 
     @tenacity.retry(wait=tenacity.wait_fixed(RETRY_INTERVAL),
                     retry=tenacity.retry_if_exception_type(NotTimeForBountyException))
     def job(self) -> None:
         """Periodic job."""
-        self.logger.debug('Job started')
+        self.logger.debug('"Get Bounty" job started')
         reward_date = self.get_reward_date()
         last_block_number = self.skale.web3.eth.blockNumber
         block_data = call_retry.call(self.skale.web3.eth.getBlock, last_block_number)
@@ -123,18 +126,20 @@ class BountyAgent:
 
     def job_listener(self, event):
         if event.exception:
-            self.logger.info('The job failed')
+            self.logger.info('"Get Bounty" job failed')
             utc_now = datetime.utcnow()
-            self.scheduler.add_job(self.job, 'date', run_date=utc_now + timedelta(seconds=60))
+            self.scheduler.add_job(self.job,
+                                   'date',
+                                   run_date=utc_now + timedelta(seconds=DELAY_AFTER_ERR))
             self.logger.debug(self.scheduler.get_jobs())
         else:
-            self.logger.debug('The job finished successfully)')
-            reward_date = self.get_reward_date()
-            self.logger.info(f'Next reward date after job: {reward_date}')
-            utc_now = datetime.utcnow()
-            if utc_now > reward_date:
-                self.logger.debug('Changing reward time by current time')
-                reward_date = utc_now
+            self.logger.debug('"Get Bounty" job finished successfully)')
+            try:
+                reward_date = self.get_reward_date()
+                self.logger.info(f'Next reward date after getBounty job: {reward_date}')
+            except Exception:
+                reward_date = datetime.utcnow() + timedelta(seconds=DELAY_AFTER_ERR)
+                self.logger.info(f'Next try to get reward date: {reward_date}')
             self.scheduler.add_job(self.job, 'date', run_date=reward_date)
             self.scheduler.print_jobs()
 
