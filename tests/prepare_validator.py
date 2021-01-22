@@ -75,8 +75,11 @@ def create_validator(skale):
 
 
 def create_node(skale, node_id):
-    res_tx = skale.manager.create_node(IP_BASE + str(node_id), TEST_PORT,
-                                       'node_' + str(node_id), wait_for=True)
+    name = f'node_{node_id}'
+    ip = f'{IP_BASE}{node_id}'
+    domain_name = f'skalebounty{node_id}.com'
+    res_tx = skale.manager.create_node(
+        ip, TEST_PORT, name, domain_name, wait_for=True)
 
     if res_tx.receipt['status'] == 1:
         print(f'Node with ID={node_id} was successfully created')
