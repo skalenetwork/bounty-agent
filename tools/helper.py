@@ -28,7 +28,7 @@ import tenacity
 from skale import Skale
 from skale.wallets import RPCWallet
 
-from configs import CONFIG_CHECK_PERIOD, NOTIFIER_URL
+from configs import CONFIG_CHECK_PERIOD, NOTIFIER_URL, STATE_FILEPATH
 from configs.web3 import ABI_FILEPATH, ENDPOINT
 from tools.exceptions import NodeNotFoundException
 
@@ -42,7 +42,7 @@ _config_first_read = True
 
 def init_skale():
     wallet = RPCWallet(os.environ['TM_URL'])
-    return Skale(ENDPOINT, ABI_FILEPATH, wallet)
+    return Skale(ENDPOINT, ABI_FILEPATH, wallet, state_path=STATE_FILEPATH)
 
 
 def get_agent_name(name):
