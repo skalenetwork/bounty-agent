@@ -117,7 +117,7 @@ class BountyAgent:
         last_block_number = self.skale.web3.eth.blockNumber
         block_data = call_retry.call(self.skale.web3.eth.getBlock, last_block_number)
         block_timestamp = datetime.utcfromtimestamp(block_data['timestamp'])
-        self.logger.info(f'Next reward date: {reward_date}')
+        self.logger.info(f'Reward date: {reward_date}')
         self.logger.info(f'Block timestamp:  {block_timestamp}')
         if reward_date > block_timestamp:
             self.logger.info('Current block timestamp is less than reward time. Will try in 1 min')
@@ -136,7 +136,8 @@ class BountyAgent:
             self.logger.debug('"Get Bounty" job finished successfully)')
             try:
                 reward_date = self.get_reward_date()
-                self.logger.info(f'Next reward date after getBounty job: {reward_date}')
+                self.notifier.send(f'Next reward date: {reward_date}',
+                                   MsgIcon.BOUNTY)
             except Exception:
                 reward_date = datetime.utcnow() + timedelta(seconds=DELAY_AFTER_ERR)
                 self.logger.info(f'Next try to get reward date: {reward_date}')
