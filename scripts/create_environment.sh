@@ -21,4 +21,4 @@ sudo chown -R $USER:$USER /skale_node_data
 
 
 #bash ${DIR}/deploy_SM.sh
-bash ${DIR}/helper-scripts/deploy_test_manager.sh
+bash ${DIR}/../helper-scripts/deploy_test_manager.sh
