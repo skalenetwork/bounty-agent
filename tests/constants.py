@@ -5,7 +5,8 @@ import os
 DIR_PATH = os.path.dirname(os.path.realpath(__file__))
 
 ENDPOINT = os.environ['ENDPOINT']
-TEST_ABI_FILEPATH = '/skale_vol/contracts_info/manager.json'
+HELPER_SCRIPTS_DIR = os.path.join(DIR_PATH, os.pardir, 'helper-scripts')
+TEST_ABI_FILEPATH = os.path.join(HELPER_SCRIPTS_DIR, 'contracts_data', 'manager.json')
 ETH_PRIVATE_KEY = os.environ['ETH_PRIVATE_KEY']
 
 D_VALIDATOR_ID = 1

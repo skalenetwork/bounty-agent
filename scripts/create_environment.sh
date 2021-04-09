@@ -19,5 +19,4 @@ sudo chown -R $USER:$USER /skale_vol
 sudo mkdir -p /skale_node_data
 sudo chown -R $USER:$USER /skale_node_data
 
-
-bash ${DIR}/deploy_SM.sh
+bash ${DIR}/../helper-scripts/deploy_test_manager.sh
