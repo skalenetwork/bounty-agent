@@ -1,4 +1,4 @@
-skale.py==4.1b23
+skale.py==4.1b25
 schedule==0.6.0
 tenacity==6.2.0
 apscheduler==3.6.3
