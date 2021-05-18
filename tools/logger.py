@@ -17,20 +17,50 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import hashlib
 import logging
 import logging.handlers as py_handlers
 import os
+import re
 import sys
 from logging import Formatter, StreamHandler
 
 from configs.logs import (LOG_BACKUP_COUNT, LOG_FILE_SIZE_BYTES, LOG_FOLDER,
                           LOG_FORMAT)
 
+HIDING_PATTERNS = [
+    r'NEK\:\w+',
+    r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+',
+    r'ws[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
+]
+
+
+class HidingFormatter:
+    def __init__(self, base_formatter, patterns):
+        self.base_formatter = base_formatter
+        self._patterns = patterns
+
+    @classmethod
+    def convert_match_to_sha3(cls, match):
+        return hashlib.sha3_256(match.group(0).encode('utf-8')).digest().hex()
+
+    def format(self, record):
+        msg = self.base_formatter.format(record)
+        for pattern in self._patterns:
+            pat = re.compile(pattern)
+            msg = pat.sub(self.convert_match_to_sha3, msg)
+        return msg
+
+    def __getattr__(self, attr):
+        return getattr(self.base_formatter, attr)
+
 
 def init_logger(log_file_path):
     handlers = []
 
-    formatter = Formatter(LOG_FORMAT)
+    base_formatter = Formatter(LOG_FORMAT)
+    formatter = HidingFormatter(base_formatter, HIDING_PATTERNS)
+
     f_handler = py_handlers.RotatingFileHandler(log_file_path,
                                                 maxBytes=LOG_FILE_SIZE_BYTES,
                                                 backupCount=LOG_BACKUP_COUNT)
