@@ -34,7 +34,7 @@ from web3.logs import DISCARD
 
 from configs import (DELAY_AFTER_ERR, LONG_LINE, MISFIRE_GRACE_TIME,
                      NODE_CONFIG_FILEPATH, RETRY_INTERVAL)
-from tools import db
+# from tools import db
 from tools.exceptions import NotTimeForBountyException
 from tools.helper import (MsgIcon, Notifier, call_retry,
                           check_if_node_is_registered, get_agent_name,
@@ -84,7 +84,7 @@ class BountyAgent:
             raise
         self.logger.info('The bounty was successfully received')
         self.logger.debug(f'Receipt: {tx_res.receipt}')
-        tx_hash = tx_res.receipt['transactionHash'].hex()
+        # tx_hash = tx_res.receipt['transactionHash'].hex()
         self.logger.info(LONG_LINE)
 
         try:
@@ -99,13 +99,13 @@ class BountyAgent:
             self.logger.exception(err)
         else:
             self.notifier.send(f'Bounty awarded to node: {bounty_in_skl:.3f} SKL', MsgIcon.BOUNTY)
-            try:
-                db.save_bounty_event(datetime.utcfromtimestamp(args['time']), str(tx_hash),
-                                     tx_res.receipt['blockNumber'], args['nodeIndex'],
-                                     args['bounty'], args['averageDowntime'],
-                                     args['averageLatency'], tx_res.receipt['gasUsed'])
-            except Exception as err:
-                self.logger.error(f'Cannot save getBounty event data to db. Error: {err}')
+            # try:
+            #     db.save_bounty_event(datetime.utcfromtimestamp(args['time']), str(tx_hash),
+            #                          tx_res.receipt['blockNumber'], args['nodeIndex'],
+            #                          args['bounty'], args['averageDowntime'],
+            #                          args['averageLatency'], tx_res.receipt['gasUsed'])
+            # except Exception as err:
+            #     self.logger.error(f'Cannot save getBounty event data to db. Error: {err}')
         return tx_res.receipt['status']
 
     @tenacity.retry(wait=tenacity.wait_fixed(RETRY_INTERVAL),
