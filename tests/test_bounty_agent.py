@@ -64,10 +64,7 @@ def test_get_bounty_neg(skale, bounty_collector):
         bounty_collector.get_bounty()
 
 
-def get_bounty_events(skale):
-    cur_node_id = 0
-    # last_block_number_in_db = db.get_bounty_max_block_number()
-    # print(f'last_block_number_in_db = {last_block_number_in_db}')
+def get_bounty_events(skale, cur_node_id):
     start_block_number = skale.nodes.get(cur_node_id)['start_block']  # TODO: REMOVE!!!
     # if last_block_number_in_db is None:
     #     # first_node_id = 0
@@ -118,8 +115,7 @@ def test_bounty_job_saves_data(skale, bounty_collector):
     go_to_date(skale.web3, reward_date)
     bounty_collector.job()
 
-    # assert db.get_count_of_bounty_receipt_records() == 1
-    bounties = get_bounty_events(skale)
+    bounties = get_bounty_events(skale, bounty_collector.id)
     print(f'RESULT: {bounties}')
     print(f'LEN: {len(bounties)}')
     assert len(bounties) == 1
@@ -138,7 +134,7 @@ def test_run_agent(skale, cur_node_id):
         time.sleep(RETRY_INTERVAL)
         bounty_collector.stop()
 
-    bounties = get_bounty_events(skale)
+    bounties = get_bounty_events(skale, bounty_collector.id)
     print(f'RESULT2: {bounties}')
     print(f'LEN2: {len(bounties)}')
     assert len(bounties) == 2
