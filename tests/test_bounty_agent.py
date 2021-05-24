@@ -27,7 +27,6 @@ from skale.transactions.result import TransactionError
 import bounty_agent
 from configs import RETRY_INTERVAL
 from tests.prepare_validator import get_active_ids, go_to_date
-# from tools import db
 from tools.exceptions import NodeNotFoundException
 from tools.helper import check_if_node_is_registered
 
@@ -66,37 +65,21 @@ def test_get_bounty_neg(skale, bounty_collector):
 
 def get_bounty_events(skale, cur_node_id):
     start_block_number = skale.nodes.get(cur_node_id)['start_block']  # TODO: REMOVE!!!
-    # if last_block_number_in_db is None:
-    #     # first_node_id = 0
-    #     start_block_number = skale.nodes.get(cur_node_id)['start_block']  # TODO: REMOVE!!!
-    #     # start_block_number = TEMP_LAST_BLOCK  # TODO: REMOVE!!!
-    # else:
-    #     # start_block_number = last_block_number_in_db + 1  # TODO: REMOVE!!!
-    #     # start_block_number = max(last_block_number_in_db + 1, TEMP_LAST_BLOCK)  # TODO: REMOVE!
 
     while True:
         block_number = skale.web3.eth.blockNumber
-        print(f'last block = {block_number}')
         end_block_number = start_block_number + BLOCK_STEP - 1
         if end_block_number > block_number:
             end_block_number = block_number
-        print(f'start_block_number = {start_block_number}')
-        print(f'end_block_number = {end_block_number}')
         logs = skale.manager.contract.events.BountyReceived.getLogs(
             fromBlock=hex(start_block_number),
             toBlock=hex(end_block_number))
-        print('----------')
-        # print(logs)
         bounty_events = []
         for log in logs:
             args = log['args']
             tx_block_number = log['blockNumber']
             block_data = skale.web3.eth.getBlock(tx_block_number)
             block_timestamp = datetime.utcfromtimestamp(block_data['timestamp'])
-            print(log)
-            # db.save_bounty(args['nodeIndex'], args['averageLatency'], args['averageDowntime'],
-            #                args['bounty'], args['gasSpend'], log['transactionHash'].hex(),
-            #                log['blockNumber'], block_timestamp)
             bounty_events.append((args['nodeIndex'], args['averageLatency'],
                                   args['averageDowntime'], args['bounty'],
                                   args['gasSpend'], log['transactionHash'].hex(),
@@ -105,19 +88,15 @@ def get_bounty_events(skale, cur_node_id):
         start_block_number = start_block_number + BLOCK_STEP
         if end_block_number >= block_number:
             return bounty_events
-            # break
 
 
 def test_bounty_job_saves_data(skale, bounty_collector):
-    # db.clear_all_bounty_receipts()
     reward_date = skale.nodes.contract.functions.getNodeNextRewardDate(bounty_collector.id).call()
     print(f'Reward date: {reward_date}')
     go_to_date(skale.web3, reward_date)
     bounty_collector.job()
 
     bounties = get_bounty_events(skale, bounty_collector.id)
-    print(f'RESULT: {bounties}')
-    print(f'LEN: {len(bounties)}')
     assert len(bounties) == 1
 
 
@@ -126,7 +105,6 @@ def test_run_agent(skale, cur_node_id):
     reward_date = skale.nodes.contract.functions.getNodeNextRewardDate(bounty_collector.id).call()
     print(f'Reward date: {reward_date}')
     go_to_date(skale.web3, reward_date)
-    # db.clear_all_bounty_receipts()
 
     with freeze_time(datetime.utcfromtimestamp(reward_date)):
         bounty_collector.run()
@@ -135,7 +113,4 @@ def test_run_agent(skale, cur_node_id):
         bounty_collector.stop()
 
     bounties = get_bounty_events(skale, bounty_collector.id)
-    print(f'RESULT2: {bounties}')
-    print(f'LEN2: {len(bounties)}')
     assert len(bounties) == 2
-    # assert db.get_count_of_bounty_receipt_records() == 1
