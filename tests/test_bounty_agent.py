@@ -34,19 +34,19 @@ BLOCK_STEP = 1000
 
 
 @pytest.fixture(scope="module")
-def cur_node_id(skale):
+def node_id(skale):
     ids = get_active_ids(skale)
     return len(ids) - 2
 
 
 @pytest.fixture(scope="module")
-def bounty_collector(skale, cur_node_id):
-    return bounty_agent.BountyAgent(skale, cur_node_id)
+def bounty_collector(skale, node_id):
+    return bounty_agent.BountyAgent(skale, node_id)
 
 
-def test_check_if_node_is_registered(skale, cur_node_id):
-    assert check_if_node_is_registered(skale, cur_node_id)
-    assert check_if_node_is_registered(skale, cur_node_id + 1)
+def test_check_if_node_is_registered(skale, node_id):
+    assert check_if_node_is_registered(skale, node_id)
+    assert check_if_node_is_registered(skale, node_id + 1)
     with pytest.raises(NodeNotFoundException):
         check_if_node_is_registered(skale, 100)
 
@@ -63,9 +63,8 @@ def test_get_bounty_neg(skale, bounty_collector):
         bounty_collector.get_bounty()
 
 
-def get_bounty_events(skale, cur_node_id):
-    start_block_number = skale.nodes.get(cur_node_id)['start_block']  # TODO: REMOVE!!!
-
+def get_bounty_events(skale, node_id):
+    start_block_number = skale.nodes.get(node_id)['start_block']
     while True:
         block_number = skale.web3.eth.blockNumber
         end_block_number = start_block_number + BLOCK_STEP - 1
@@ -84,7 +83,6 @@ def get_bounty_events(skale, cur_node_id):
                                   args['averageDowntime'], args['bounty'],
                                   args['gasSpend'], log['transactionHash'].hex(),
                                   log['blockNumber'], block_timestamp))
-
         start_block_number = start_block_number + BLOCK_STEP
         if end_block_number >= block_number:
             return bounty_events
@@ -100,8 +98,8 @@ def test_bounty_job_saves_data(skale, bounty_collector):
     assert len(bounties) == 1
 
 
-def test_run_agent(skale, cur_node_id):
-    bounty_collector = bounty_agent.BountyAgent(skale, cur_node_id)
+def test_run_agent(skale, node_id):
+    bounty_collector = bounty_agent.BountyAgent(skale, node_id)
     reward_date = skale.nodes.contract.functions.getNodeNextRewardDate(bounty_collector.id).call()
     print(f'Reward date: {reward_date}')
     go_to_date(skale.web3, reward_date)
