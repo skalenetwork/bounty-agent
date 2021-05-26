@@ -34,7 +34,6 @@ from web3.logs import DISCARD
 
 from configs import (DELAY_AFTER_ERR, LONG_LINE, MISFIRE_GRACE_TIME,
                      NODE_CONFIG_FILEPATH, RETRY_INTERVAL)
-from tools import db
 from tools.exceptions import NotTimeForBountyException
 from tools.helper import (MsgIcon, Notifier, call_retry,
                           check_if_node_is_registered, get_agent_name,
@@ -94,18 +93,12 @@ class BountyAgent:
             args = h_receipt[0]['args']
             bounty_in_skl = self.skale.web3.fromWei(args["bounty"], 'ether')
         except Exception as err:
-            self.notifier.send('Bounty was received, but reward amount cannot be read from '
-                               'tx receipt', MsgIcon.WARNING)
+            self.notifier.send(f'Bounty was received, but reward amount cannot be read from '
+                               f'tx receipt.\nTX hash: {tx_hash}', MsgIcon.WARNING)
             self.logger.exception(err)
         else:
-            self.notifier.send(f'Bounty awarded to node: {bounty_in_skl:.3f} SKL', MsgIcon.BOUNTY)
-            try:
-                db.save_bounty_event(datetime.utcfromtimestamp(args['time']), str(tx_hash),
-                                     tx_res.receipt['blockNumber'], args['nodeIndex'],
-                                     args['bounty'], args['averageDowntime'],
-                                     args['averageLatency'], tx_res.receipt['gasUsed'])
-            except Exception as err:
-                self.logger.error(f'Cannot save getBounty event data to db. Error: {err}')
+            self.notifier.send(f'Bounty awarded to node: {bounty_in_skl:.3f} SKL.\n'
+                               f'TX hash: {tx_hash}', MsgIcon.BOUNTY)
         return tx_res.receipt['status']
 
     @tenacity.retry(wait=tenacity.wait_fixed(RETRY_INTERVAL),
