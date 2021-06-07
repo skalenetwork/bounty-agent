@@ -29,7 +29,7 @@ from datetime import datetime, timedelta
 import tenacity
 from apscheduler.events import EVENT_JOB_ERROR, EVENT_JOB_EXECUTED
 from apscheduler.schedulers.background import BackgroundScheduler
-from skale.transactions.result import TransactionError
+from skale.transactions.exceptions import TransactionError
 from web3.logs import DISCARD
 
 from configs import (DELAY_AFTER_ERR, LONG_LINE, MISFIRE_GRACE_TIME,

@@ -22,7 +22,7 @@ from datetime import datetime
 
 import pytest
 from freezegun import freeze_time
-from skale.transactions.result import TransactionError
+from skale.transactions.exceptions import TransactionError
 
 import bounty_agent
 from configs import RETRY_INTERVAL
