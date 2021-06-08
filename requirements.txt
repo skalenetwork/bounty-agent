@@ -1,7 +1,6 @@
-# skale.py==4.1b26
-git+git://github.com/skalenetwork/skale.py.git@enhancement/SKALE-3350-new-tx-pipeline#egg=skale.py
-schedule==0.6.0
-tenacity==6.2.0
 apscheduler==3.6.3
 peewee==3.14.0
 PyMySQL==0.10.1
+schedule==0.6.0
+skale.py==5.1dev2
+tenacity==6.2.0
