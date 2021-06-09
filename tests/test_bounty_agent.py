@@ -22,10 +22,9 @@ from datetime import datetime
 
 import pytest
 from freezegun import freeze_time
-from skale.transactions.result import TransactionError
+from skale.transactions.exceptions import TransactionError
 
 import bounty_agent
-from configs import RETRY_INTERVAL
 from tests.prepare_validator import get_active_ids, go_to_date
 from tools.exceptions import NodeNotFoundException
 from tools.helper import check_if_node_is_registered
@@ -106,8 +105,8 @@ def test_run_agent(skale, node_id):
 
     with freeze_time(datetime.utcfromtimestamp(reward_date)):
         bounty_collector.run()
-        print(f'Sleep for {RETRY_INTERVAL} sec')
-        time.sleep(RETRY_INTERVAL)
+        print('Sleep for 1 sec')
+        time.sleep(1)
         bounty_collector.stop()
 
     bounties = get_bounty_events(skale, bounty_collector.id)
