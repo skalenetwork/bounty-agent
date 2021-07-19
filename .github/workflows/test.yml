@@ -14,7 +14,8 @@ jobs:
       DB_USER: ${{ secrets.DB_USER }}
       DB_ROOT_PASSWORD: ${{ secrets.DB_ROOT_PASSWORD }}
       DB_PORT: ${{ secrets.DB_PORT }}
-      MANAGER_TAG: "1.8.0-develop.15"
+      MANAGER_TAG: "1.8.0-develop.44"
+
     steps:
     - uses: actions/checkout@v2
     - name: Set up Python 3.7

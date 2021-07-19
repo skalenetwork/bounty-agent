@@ -4,6 +4,8 @@ from datetime import datetime
 from skale import Skale
 from skale.utils.web3_utils import init_web3
 from skale.wallets import Web3Wallet
+from skale.utils.contracts_provision.main import add_test_permissions
+
 
 from tests.constants import (D_VALIDATOR_DESC, D_VALIDATOR_FEE, D_VALIDATOR_ID,
                              D_VALIDATOR_MIN_DEL, D_VALIDATOR_NAME, ENDPOINT,
@@ -28,6 +30,7 @@ def validator_exist(skale):
 
 def setup_validator(skale):
     """Create and activate a validator"""
+    add_test_permissions(skale)
     if not validator_exist(skale):
         create_validator(skale)
         enable_validator(skale)

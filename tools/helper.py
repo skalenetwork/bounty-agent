@@ -19,16 +19,26 @@
 
 import json
 import logging
-import os
 import re
 from enum import Enum
 
+import redis
 import requests
 import tenacity
 from skale import Skale
-from skale.wallets import RPCWallet
+from skale.utils.web3_utils import init_web3
+from skale.wallets import RedisWalletAdapter, SgxWallet
 
-from configs import CONFIG_CHECK_PERIOD, NOTIFIER_URL, STATE_FILEPATH
+from configs import (
+    CONFIG_CHECK_PERIOD,
+    DEFAULT_POOL,
+    NOTIFIER_URL,
+    NODE_CONFIG_FILEPATH,
+    REDIS_URI,
+    SGX_CERTIFICATES_FOLDER,
+    SGX_SERVER_URL,
+    STATE_FILEPATH
+)
 from configs.web3 import ABI_FILEPATH, ENDPOINT
 from tools.exceptions import NodeNotFoundException
 
@@ -41,8 +51,22 @@ _config_first_read = True
 
 
 def init_skale():
-    wallet = RPCWallet(os.environ['TM_URL'])
+    wallet = init_wallet()
     return Skale(ENDPOINT, ABI_FILEPATH, wallet, state_path=STATE_FILEPATH)
+
+
+def init_wallet(pool=DEFAULT_POOL):
+    sgx_keyname = get_sgx_keyname_from_config(NODE_CONFIG_FILEPATH)
+    cpool = redis.ConnectionPool.from_url(REDIS_URI)
+    rs = redis.Redis(connection_pool=cpool)
+    web3 = init_web3(ENDPOINT)
+    sgx_wallet = SgxWallet(
+        web3=web3,
+        sgx_endpoint=SGX_SERVER_URL,
+        key_name=sgx_keyname,
+        path_to_cert=SGX_CERTIFICATES_FOLDER
+    )
+    return RedisWalletAdapter(rs, pool, sgx_wallet)
 
 
 def get_agent_name(name):
@@ -75,6 +99,26 @@ def get_id_from_config(node_config_filepath) -> int:
         if _config_first_read:
             logger.warning(
                 'Cannot read a node id from config file - is the node already registered?')
+            _config_first_read = False
+        raise err
+
+
+@tenacity.retry(
+    wait=tenacity.wait_fixed(CONFIG_CHECK_PERIOD),
+    retry=tenacity.retry_if_exception_type(KeyError) | tenacity.retry_if_exception_type(
+        FileNotFoundError))
+def get_sgx_keyname_from_config(node_config_filepath) -> int:
+    """Gets sgx keyname from config file."""
+    global _config_first_read
+    try:
+        logger.debug('Reading node id from config file...')
+        with open(node_config_filepath) as json_file:
+            data = json.load(json_file)
+        return data['sgx_key_name']
+    except (FileNotFoundError, KeyError) as err:
+        if _config_first_read:
+            logger.warning(
+                'Cannot read a sgx_key_name from config file?')
             _config_first_read = False
         raise err
 
