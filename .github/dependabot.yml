@@ -6,5 +6,7 @@ updates:
     interval: weekly
     day: saturday
   open-pull-requests-limit: 10
+  allow:
+    - dependency-type: "production"
   assignees:
   - alexgex
