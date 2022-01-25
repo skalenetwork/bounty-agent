@@ -80,7 +80,7 @@ def get_bounty_events(skale, node_id):
             block_timestamp = datetime.utcfromtimestamp(block_data['timestamp'])
             bounty_events.append((args['nodeIndex'], args['averageLatency'],
                                   args['averageDowntime'], args['bounty'],
-                                  args['gasSpend'], log['transactionHash'].hex(),
+                                  log['transactionHash'].hex(),
                                   log['blockNumber'], block_timestamp))
         start_block_number = start_block_number + BLOCK_STEP
         if end_block_number >= block_number:
