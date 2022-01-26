@@ -80,7 +80,7 @@ def get_bounty_events(skale, node_id):
             block_timestamp = datetime.utcfromtimestamp(block_data['timestamp'])
             bounty_events.append((args['nodeIndex'], args['averageLatency'],
                                   args['averageDowntime'], args['bounty'],
-                                  args['gasSpend'], log['transactionHash'].hex(),
+                                  log['transactionHash'].hex(),
                                   log['blockNumber'], block_timestamp))
         start_block_number = start_block_number + BLOCK_STEP
         if end_block_number >= block_number:
@@ -105,8 +105,9 @@ def test_run_agent(skale, node_id):
 
     with freeze_time(datetime.utcfromtimestamp(reward_date)):
         bounty_collector.run()
-        print('Sleep for 1 sec')
-        time.sleep(1)
+        sleep_time = 5
+        print(f'Sleep for {sleep_time} sec')
+        time.sleep(sleep_time)
         bounty_collector.stop()
 
     bounties = get_bounty_events(skale, bounty_collector.id)
