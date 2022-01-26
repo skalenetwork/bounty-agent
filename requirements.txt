@@ -1,4 +1,4 @@
-apscheduler==3.6.3
+apscheduler==3.8.1
 peewee==3.14.0
 PyMySQL==0.10.1
 schedule==0.6.0
