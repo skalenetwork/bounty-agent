@@ -105,8 +105,9 @@ def test_run_agent(skale, node_id):
 
     with freeze_time(datetime.utcfromtimestamp(reward_date)):
         bounty_collector.run()
-        print('Sleep for 1 sec')
-        time.sleep(1)
+        sleep_time = 5
+        print(f'Sleep for {sleep_time} sec')
+        time.sleep(sleep_time)
         bounty_collector.stop()
 
     bounties = get_bounty_events(skale, bounty_collector.id)
