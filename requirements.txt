@@ -3,4 +3,4 @@ peewee==3.14.0
 PyMySQL==0.10.1
 schedule==0.6.0
 skale.py==5.7dev0
-tenacity==6.2.0
+tenacity==8.0.1
