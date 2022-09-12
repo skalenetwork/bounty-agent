@@ -17,53 +17,69 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import hashlib
 import logging
 import logging.handlers as py_handlers
 import os
 import re
 import sys
 from logging import Formatter, StreamHandler
+from urllib.parse import urlparse
 
-from configs.logs import (LOG_BACKUP_COUNT, LOG_FILE_SIZE_BYTES, LOG_FOLDER,
-                          LOG_FORMAT)
+from configs import SGX_SERVER_URL
+from configs.web3 import ENDPOINT
 
-HIDING_PATTERNS = [
-    r'NEK\:\w+',
-    r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+',
-    r'ws[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
-]
+from configs.logs import (
+    LOG_BACKUP_COUNT,
+    LOG_FILE_SIZE_BYTES,
+    LOG_FOLDER,
+    LOG_FORMAT
+)
 
 
-class HidingFormatter:
-    def __init__(self, base_formatter, patterns):
-        self.base_formatter = base_formatter
-        self._patterns = patterns
+def compose_hiding_patterns():
+    sgx_ip = urlparse(SGX_SERVER_URL).hostname
+    eth_ip = urlparse(ENDPOINT).hostname
+    return {
+        rf'{sgx_ip}': '[SGX_IP]',
+        rf'{eth_ip}': '[ETH_IP]',
+        r'NEK\:\w+': '[SGX_KEY]'
+    }
 
-    @classmethod
-    def convert_match_to_sha3(cls, match):
-        return hashlib.sha3_256(match.group(0).encode('utf-8')).digest().hex()
 
-    def format(self, record):
-        msg = self.base_formatter.format(record)
-        for pattern in self._patterns:
-            pat = re.compile(pattern)
-            msg = pat.sub(self.convert_match_to_sha3, msg)
+class HidingFormatter(Formatter):
+    def __init__(self, log_format: str, patterns: dict) -> None:
+        super().__init__(log_format)
+        self._patterns: dict = patterns
+
+    def _filter_sensitive(self, msg) -> str:
+        for match, replacement in self._patterns.items():
+            pat = re.compile(match)
+            msg = pat.sub(replacement, msg)
         return msg
 
-    def __getattr__(self, attr):
-        return getattr(self.base_formatter, attr)
+    def format(self, record) -> str:
+        msg = super().format(record)
+        return self._filter_sensitive(msg)
+
+    def formatException(self, exc_info) -> str:
+        msg = super().formatException(exc_info)
+        return self._filter_sensitive(msg)
+
+    def formatStack(self, stack_info) -> str:
+        msg = super().formatStack(stack_info)
+        return self._filter_sensitive(msg)
 
 
 def init_logger(log_file_path):
     handlers = []
 
-    base_formatter = Formatter(LOG_FORMAT)
-    formatter = HidingFormatter(base_formatter, HIDING_PATTERNS)
+    formatter = HidingFormatter(LOG_FORMAT, compose_hiding_patterns())
 
-    f_handler = py_handlers.RotatingFileHandler(log_file_path,
-                                                maxBytes=LOG_FILE_SIZE_BYTES,
-                                                backupCount=LOG_BACKUP_COUNT)
+    f_handler = py_handlers.RotatingFileHandler(
+        log_file_path,
+        maxBytes=LOG_FILE_SIZE_BYTES,
+        backupCount=LOG_BACKUP_COUNT
+    )
 
     f_handler.setFormatter(formatter)
     f_handler.setLevel(logging.INFO)
