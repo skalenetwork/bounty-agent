@@ -103,7 +103,7 @@ def init_agent_logger(agent_name, node_id):
 
 def add_file_handler(logger, agent_name, node_id):
     log_path = get_log_filepath(agent_name, node_id)
-    logger.addHandler(log_path=log_path)
+    logger.addHandler(create_file_handler(log_path))
 
 
 def get_log_filepath(agent_name, node_id):
