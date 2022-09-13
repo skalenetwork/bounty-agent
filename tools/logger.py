@@ -70,11 +70,8 @@ class HidingFormatter(Formatter):
         return self._filter_sensitive(msg)
 
 
-def init_logger(log_file_path):
-    handlers = []
-
+def create_file_handler(log_file_path):
     formatter = HidingFormatter(LOG_FORMAT, compose_hiding_patterns())
-
     f_handler = py_handlers.RotatingFileHandler(
         log_file_path,
         maxBytes=LOG_FILE_SIZE_BYTES,
@@ -83,19 +80,30 @@ def init_logger(log_file_path):
 
     f_handler.setFormatter(formatter)
     f_handler.setLevel(logging.INFO)
-    handlers.append(f_handler)
+    return f_handler
 
+
+def create_stream_handler():
+    formatter = HidingFormatter(LOG_FORMAT, compose_hiding_patterns())
     stream_handler = StreamHandler(sys.stderr)
     stream_handler.setFormatter(formatter)
     stream_handler.setLevel(logging.INFO)
-    handlers.append(stream_handler)
+    return stream_handler
 
+
+def init_logger():
+    handlers = [create_stream_handler()]
     logging.basicConfig(level=logging.DEBUG, handlers=handlers)
 
 
 def init_agent_logger(agent_name, node_id):
     log_path = get_log_filepath(agent_name, node_id)
     init_logger(log_path)
+
+
+def add_file_handler(logger, agent_name, node_id):
+    log_path = get_log_filepath(agent_name, node_id)
+    logger.addHandler(log_path=log_path)
 
 
 def get_log_filepath(agent_name, node_id):
