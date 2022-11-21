@@ -30,7 +30,7 @@ from tools.exceptions import NodeNotFoundException
 from tools.helper import check_if_node_is_registered
 
 BLOCK_STEP = 1000
-REWARD_DATE_OFFSET = 1000  # additional seconds to skip to ensure reward time is came
+REWARD_DATE_OFFSET = 2000  # additional seconds to skip to ensure reward time is came
 
 
 @pytest.fixture(scope="module")
