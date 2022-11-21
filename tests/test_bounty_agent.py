@@ -90,7 +90,7 @@ def get_bounty_events(skale, node_id):
 def test_bounty_job_saves_data(skale, bounty_collector):
     reward_date = skale.nodes.contract.functions.getNodeNextRewardDate(bounty_collector.id).call()
     print(f'Reward date: {reward_date}')
-    go_to_date(skale.web3, reward_date)
+    go_to_date(skale.web3, reward_date + 1000)
     bounty_collector.job()
 
     bounties = get_bounty_events(skale, bounty_collector.id)
@@ -101,7 +101,7 @@ def test_run_agent(skale, node_id):
     bounty_collector = bounty_agent.BountyAgent(skale, node_id)
     reward_date = skale.nodes.contract.functions.getNodeNextRewardDate(bounty_collector.id).call()
     print(f'Reward date: {reward_date}')
-    go_to_date(skale.web3, reward_date)
+    go_to_date(skale.web3, reward_date + 1000)
 
     with freeze_time(datetime.utcfromtimestamp(reward_date)):
         bounty_collector.run()
