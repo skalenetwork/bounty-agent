@@ -1,5 +1,5 @@
 [submodule "helper-scripts"]
 	path = helper-scripts
-	url = https://github.com/skalenetwork/helper-scripts.git
+	url = https://github.com/skalenetwork/helper-scripts
 	branch = develop
 
