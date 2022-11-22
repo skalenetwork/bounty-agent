@@ -84,6 +84,7 @@ class BountyAgent:
             self.notifier.send(str(err), MsgIcon.CRITICAL)
             raise
         self.logger.info('The bounty was successfully received')
+        print('[TMP] Bounty tx sent', tx_res.tx_hash, tx_res.receipt)
         self.logger.debug(f'Receipt: {tx_res.receipt}')
         tx_hash = tx_res.receipt['transactionHash'].hex()
         self.logger.info(LONG_LINE)
