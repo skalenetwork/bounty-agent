@@ -29,9 +29,8 @@ from tests.prepare_validator import get_active_ids, go_to_date
 from tools.exceptions import NodeNotFoundException
 from tools.helper import check_if_node_is_registered
 
-BLOCK_STEP = 1000
-MINING_DELAY = 120
-REWARD_DATE_OFFSET = 1000  # additional seconds to skip to ensure reward time is came
+MINING_DELAY = 5
+REWARD_DATE_OFFSET = 10  # additional seconds to skip to ensure reward time is came
 
 
 @pytest.fixture(scope="module")
@@ -65,47 +64,22 @@ def test_get_bounty_neg(skale, bounty_collector):
 
 
 def get_bounty_events(skale, node_id):
-    # from_block_number = skale.nodes.get(node_id)['start_block']
-    # to_block_number = skale.web3.eth.blockNumber
-    # logs = skale.manager.contract.events.BountyReceived.getLogs(
-    #     fromBlock=hex(from_block_number),
-    #     toBlock=hex(to_block_number))
-    # bounty_events = []
-    # for log in logs:
-    #     args = log['args']
-    #     tx_block_number = log['blockNumber']
-    #     block_data = skale.web3.eth.getBlock(tx_block_number)
-    #     block_timestamp = datetime.utcfromtimestamp(block_data['timestamp'])
-    #     bounty_events.append((args['nodeIndex'], args['averageLatency'],
-    #                           args['averageDowntime'], args['bounty'],
-    #                           log['transactionHash'].hex(),
-    #                           log['blockNumber'], block_timestamp))
-    # return bounty_events
-
-    start_block_number = skale.nodes.get(node_id)['start_block']
-    print('Start block', start_block_number)
-    while True:
-        block_number = skale.web3.eth.blockNumber
-        end_block_number = start_block_number + BLOCK_STEP - 1
-        print('[TMP] binfo', start_block_number, end_block_number, block_number)
-        if end_block_number > block_number:
-            end_block_number = block_number
-        logs = skale.manager.contract.events.BountyReceived.getLogs(
-            fromBlock=hex(start_block_number),
-            toBlock=hex(end_block_number))
-        bounty_events = []
-        for log in logs:
-            args = log['args']
-            tx_block_number = log['blockNumber']
-            block_data = skale.web3.eth.getBlock(tx_block_number)
-            block_timestamp = datetime.utcfromtimestamp(block_data['timestamp'])
-            bounty_events.append((args['nodeIndex'], args['averageLatency'],
-                                  args['averageDowntime'], args['bounty'],
-                                  log['transactionHash'].hex(),
-                                  log['blockNumber'], block_timestamp))
-        start_block_number = start_block_number + BLOCK_STEP
-        if end_block_number >= block_number:
-            return bounty_events
+    from_block_number = skale.nodes.get(node_id)['start_block']
+    to_block_number = skale.web3.eth.blockNumber
+    logs = skale.manager.contract.events.BountyReceived.getLogs(
+        fromBlock=hex(from_block_number),
+        toBlock=hex(to_block_number))
+    bounty_events = []
+    for log in logs:
+        args = log['args']
+        tx_block_number = log['blockNumber']
+        block_data = skale.web3.eth.getBlock(tx_block_number)
+        block_timestamp = datetime.utcfromtimestamp(block_data['timestamp'])
+        bounty_events.append((args['nodeIndex'], args['averageLatency'],
+                              args['averageDowntime'], args['bounty'],
+                              log['transactionHash'].hex(),
+                              log['blockNumber'], block_timestamp))
+    return bounty_events
 
 
 def test_bounty_job_saves_data(skale, bounty_collector):
