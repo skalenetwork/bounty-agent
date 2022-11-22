@@ -93,7 +93,7 @@ def test_bounty_job_saves_data(skale, bounty_collector):
     reward_date = skale.nodes.contract.functions.getNodeNextRewardDate(bounty_collector.id).call()
     print(f'Reward date: {reward_date}')
     go_to_date(skale.web3, reward_date + REWARD_DATE_OFFSET)
-    print('Latest block timestamp', skale.web3.getBlock('latest')['timestamp'])
+    print('Latest block timestamp', skale.web3.eth.get_block('latest')['timestamp'])
     bounty_collector.job()
     time.sleep(MINING_DELAY)
 
@@ -106,7 +106,7 @@ def test_run_agent(skale, node_id):
     reward_date = skale.nodes.contract.functions.getNodeNextRewardDate(bounty_collector.id).call()
     print(f'Reward date: {reward_date}')
     go_to_date(skale.web3, reward_date + REWARD_DATE_OFFSET)
-    print('Latest block timestamp', skale.web3.getBlock('latest')['timestamp'])
+    print('Latest block timestamp', skale.web3.eth.get_block('latest')['timestamp'])
 
     with freeze_time(datetime.utcfromtimestamp(reward_date + REWARD_DATE_OFFSET)):
         bounty_collector.run()
