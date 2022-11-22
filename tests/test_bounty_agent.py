@@ -30,7 +30,8 @@ from tools.exceptions import NodeNotFoundException
 from tools.helper import check_if_node_is_registered
 
 BLOCK_STEP = 1000
-REWARD_DATE_OFFSET = 2000  # additional seconds to skip to ensure reward time is came
+MINING_DELAY = 20
+REWARD_DATE_OFFSET = 10  # additional seconds to skip to ensure reward time is came
 
 
 @pytest.fixture(scope="module")
@@ -93,6 +94,7 @@ def test_bounty_job_saves_data(skale, bounty_collector):
     print(f'Reward date: {reward_date}')
     go_to_date(skale.web3, reward_date + REWARD_DATE_OFFSET)
     bounty_collector.job()
+    time.sleep(MINING_DELAY)
 
     bounties = get_bounty_events(skale, bounty_collector.id)
     assert len(bounties) == 1
@@ -104,11 +106,8 @@ def test_run_agent(skale, node_id):
     print(f'Reward date: {reward_date}')
     go_to_date(skale.web3, reward_date + REWARD_DATE_OFFSET)
 
-    with freeze_time(datetime.utcfromtimestamp(reward_date)):
+    with freeze_time(datetime.utcfromtimestamp(reward_date + REWARD_DATE_OFFSET)):
         bounty_collector.run()
-        sleep_time = 5
-        print(f'Sleep for {sleep_time} sec')
-        time.sleep(sleep_time)
         bounty_collector.stop()
 
     bounties = get_bounty_events(skale, bounty_collector.id)
