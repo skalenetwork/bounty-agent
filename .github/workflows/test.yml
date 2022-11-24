@@ -14,7 +14,7 @@ jobs:
       DB_USER: ${{ secrets.DB_USER }}
       DB_ROOT_PASSWORD: ${{ secrets.DB_ROOT_PASSWORD }}
       DB_PORT: ${{ secrets.DB_PORT }}
-      MANAGER_TAG: "1.9.0-develop.1"
+      MANAGER_TAG: "1.9.3-beta.0"
 
     steps:
     - uses: actions/checkout@v2
@@ -24,10 +24,8 @@ jobs:
       uses: actions/setup-python@v1
       with:
         python-version: 3.7
-    - name: Install docker-compose and libs
+    - name: Install deps
       run: |
-        sudo curl -L "https://github.com/docker/compose/releases/download/1.23.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-        sudo chmod +x /usr/local/bin/docker-compose
         sudo apt-get update
         sudo apt-get install -y libmysqlclient-dev build-essential
     - name: Install python dependencies
