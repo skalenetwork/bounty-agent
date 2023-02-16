@@ -38,15 +38,17 @@ from tools.exceptions import NotTimeForBountyException
 from tools.helper import (MsgIcon, Notifier, call_retry,
                           check_if_node_is_registered, get_agent_name,
                           get_id_from_config, init_skale)
-from tools.logger import init_agent_logger
+from tools.logger import add_file_handler, init_logger
+
+logger = logging.getLogger(__name__)
 
 
 class BountyAgent:
 
     def __init__(self, skale, node_id=None):
         self.agent_name = get_agent_name(self.__class__.__name__)
-        init_agent_logger(self.agent_name, node_id)
         self.logger = logging.getLogger(self.agent_name)
+        add_file_handler(self.logger, self.agent_name, node_id)
         self.logger.info(f'Initialization of {self.agent_name} ...')
         if node_id is None:
             self.id = get_id_from_config(NODE_CONFIG_FILEPATH)
@@ -155,9 +157,14 @@ class BountyAgent:
 
 
 if __name__ == '__main__':
-    skale = init_skale()
-    bounty_agent = BountyAgent(skale)
-    bounty_agent.run()
-    while not bounty_agent.is_stopped:
-        time.sleep(1)
-        pass
+    init_logger()
+    while True:
+        try:
+            skale = init_skale()
+            bounty_agent = BountyAgent(skale)
+            bounty_agent.run()
+            while not bounty_agent.is_stopped:
+                time.sleep(1)
+                pass
+        except Exception as e:
+            logger.exception('Bounty agent failed with %s', e)
