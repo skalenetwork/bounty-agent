@@ -66,7 +66,7 @@ def test_get_bounty_neg(skale, bounty_collector):
 def get_bounty_events(skale, node_id):
     from_block_number = skale.nodes.get(node_id)['start_block']
     to_block_number = skale.web3.eth.block_number
-    logs = skale.manager.contract.events.BountyReceived.getLogs(
+    logs = skale.manager.contract.events.BountyReceived.get_logs(
         fromBlock=hex(from_block_number),
         toBlock=hex(to_block_number))
     bounty_events = []

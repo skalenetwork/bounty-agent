@@ -89,7 +89,7 @@ class BountyAgent:
         self.logger.info(LONG_LINE)
 
         try:
-            h_receipt = self.skale.manager.contract.events.BountyReceived().processReceipt(
+            h_receipt = self.skale.manager.contract.events.BountyReceived().process_receipt(
                 tx_res.receipt, errors=DISCARD)
             self.logger.info(h_receipt)
             args = h_receipt[0]['args']
