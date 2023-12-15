@@ -52,8 +52,8 @@ def test_check_if_node_is_registered(skale, node_id):
 
 
 def test_get_bounty_neg(skale, bounty_collector):
-    last_block_number = skale.web3.eth.blockNumber
-    block_data = skale.web3.eth.getBlock(last_block_number)
+    last_block_number = skale.web3.eth.block_number
+    block_data = skale.web3.eth.get_block(last_block_number)
     block_timestamp = datetime.utcfromtimestamp(block_data['timestamp'])
     reward_date = bounty_collector.get_reward_date()
     print(f'Reward date: {reward_date}')
@@ -65,7 +65,7 @@ def test_get_bounty_neg(skale, bounty_collector):
 
 def get_bounty_events(skale, node_id):
     from_block_number = skale.nodes.get(node_id)['start_block']
-    to_block_number = skale.web3.eth.blockNumber
+    to_block_number = skale.web3.eth.block_number
     logs = skale.manager.contract.events.BountyReceived.getLogs(
         fromBlock=hex(from_block_number),
         toBlock=hex(to_block_number))
@@ -73,7 +73,7 @@ def get_bounty_events(skale, node_id):
     for log in logs:
         args = log['args']
         tx_block_number = log['blockNumber']
-        block_data = skale.web3.eth.getBlock(tx_block_number)
+        block_data = skale.web3.eth.get_block(tx_block_number)
         block_timestamp = datetime.utcfromtimestamp(block_data['timestamp'])
         bounty_events.append((args['nodeIndex'], args['averageLatency'],
                               args['averageDowntime'], args['bounty'],
