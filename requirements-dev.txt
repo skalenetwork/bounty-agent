@@ -1,4 +1,4 @@
-codecov==2.1.10
+codecov==2.1.13
 flake8==6.1.0
 freezegun==1.0.0
 pytest==7.4.3
