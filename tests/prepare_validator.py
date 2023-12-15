@@ -38,8 +38,8 @@ def setup_validator(skale):
 
 
 def get_block_timestamp(web3):
-    last_block_number = web3.eth.blockNumber
-    block_data = web3.eth.getBlock(last_block_number)
+    last_block_number = web3.eth.block_number
+    block_data = web3.eth.get_block(last_block_number)
     return block_data['timestamp']
 
 
