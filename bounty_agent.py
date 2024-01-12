@@ -89,7 +89,7 @@ class BountyAgent:
         self.logger.info(LONG_LINE)
 
         try:
-            h_receipt = self.skale.manager.contract.events.BountyReceived().processReceipt(
+            h_receipt = self.skale.manager.contract.events.BountyReceived().process_receipt(
                 tx_res.receipt, errors=DISCARD)
             self.logger.info(h_receipt)
             args = h_receipt[0]['args']
@@ -109,8 +109,8 @@ class BountyAgent:
         """Periodic job."""
         self.logger.debug('"Get Bounty" job started')
         reward_date = self.get_reward_date()
-        last_block_number = self.skale.web3.eth.blockNumber
-        block_data = call_retry.call(self.skale.web3.eth.getBlock, last_block_number)
+        last_block_number = self.skale.web3.eth.block_number
+        block_data = call_retry.call(self.skale.web3.eth.get_block, last_block_number)
         block_timestamp = datetime.utcfromtimestamp(block_data['timestamp'])
         self.logger.info(f'Reward date: {reward_date}')
         self.logger.info(f'Block timestamp:  {block_timestamp}')
