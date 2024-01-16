@@ -93,7 +93,7 @@ class BountyAgent:
                 tx_res.receipt, errors=DISCARD)
             self.logger.info(h_receipt)
             args = h_receipt[0]['args']
-            bounty_in_skl = self.skale.web3.fromWei(args["bounty"], 'ether')
+            bounty_in_skl = self.skale.web3.from_wei(args["bounty"], 'ether')
         except Exception as err:
             self.notifier.send(f'Bounty was received, but reward amount cannot be read from '
                                f'tx receipt.\nTX hash: {tx_hash}', MsgIcon.WARNING)
