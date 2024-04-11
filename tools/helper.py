@@ -24,6 +24,7 @@ from enum import Enum
 
 import redis
 import requests
+import statsd
 import tenacity
 from skale import Skale
 from skale.utils.web3_utils import init_web3
@@ -37,7 +38,9 @@ from configs import (
     REDIS_URI,
     SGX_CERTIFICATES_FOLDER,
     SGX_SERVER_URL,
-    STATE_FILEPATH
+    STATE_FILEPATH,
+    STATSD_HOST,
+    STATSD_PORT
 )
 from configs.web3 import ABI_FILEPATH, ENDPOINT
 from tools.exceptions import NodeNotFoundException
@@ -48,6 +51,9 @@ call_retry = tenacity.Retrying(stop=tenacity.stop_after_attempt(10),
                                wait=tenacity.wait_fixed(2),
                                reraise=True)
 _config_first_read = True
+
+
+stcd: statsd.StatsClient = statsd.StatsClient(STATSD_HOST, STATSD_PORT)
 
 
 def init_skale():

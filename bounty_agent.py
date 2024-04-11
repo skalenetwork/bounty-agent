@@ -37,7 +37,7 @@ from configs import (DELAY_AFTER_ERR, LONG_LINE, MISFIRE_GRACE_TIME,
 from tools.exceptions import NotTimeForBountyException
 from tools.helper import (MsgIcon, Notifier, call_retry,
                           check_if_node_is_registered, get_agent_name,
-                          get_id_from_config, init_skale)
+                          get_id_from_config, init_skale, stcd)
 from tools.logger import add_file_handler, init_logger
 
 logger = logging.getLogger(__name__)
@@ -75,12 +75,14 @@ class BountyAgent:
         except Exception as err:
             self.notifier.send(f'Cannot get reward date from SKALE Manager: {err}', MsgIcon.ERROR)
             raise
+        stcd.gauge('bounty.reward_date_ts', reward_date)
         return datetime.utcfromtimestamp(reward_date)
 
     def get_bounty(self):
         try:
             tx_res = self.skale.manager.get_bounty(self.id)
         except TransactionError as err:
+            stcd.incr('bounty.get_bounty_error_cnt')
             self.notifier.send(str(err), MsgIcon.CRITICAL)
             raise
         self.logger.info('The bounty was successfully received')
@@ -95,6 +97,7 @@ class BountyAgent:
             args = h_receipt[0]['args']
             bounty_in_skl = self.skale.web3.from_wei(args["bounty"], 'ether')
         except Exception as err:
+            stcd.incr('bounty.reward_calc_error_cnt')
             self.notifier.send(f'Bounty was received, but reward amount cannot be read from '
                                f'tx receipt.\nTX hash: {tx_hash}', MsgIcon.WARNING)
             self.logger.exception(err)

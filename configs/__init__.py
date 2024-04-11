@@ -40,3 +40,6 @@ else:
 
 DEFAULT_POOL = 'transactions'
 REDIS_URI = os.getenv('REDIS_URI', 'redis://@127.0.0.1:6379')
+
+STATSD_HOST: str = '127.0.0.1'
+STATSD_PORT: int = 8125
