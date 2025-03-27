@@ -14,7 +14,7 @@ jobs:
       DB_USER: ${{ secrets.DB_USER }}
       DB_ROOT_PASSWORD: ${{ secrets.DB_ROOT_PASSWORD }}
       DB_PORT: ${{ secrets.DB_PORT }}
-      MANAGER_TAG: "1.9.3-beta.0"
+      MANAGER_TAG: "1.10.0-v1.10.0.0"
       GANACHE: true
 
     steps:
