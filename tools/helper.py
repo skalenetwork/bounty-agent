@@ -25,7 +25,7 @@ from enum import Enum
 import redis
 import requests
 import tenacity
-from skale import Skale
+from skale import SkaleManager
 from skale.utils.web3_utils import init_web3
 from skale.wallets import RedisWalletAdapter, SgxWallet
 
@@ -39,7 +39,7 @@ from configs import (
     SGX_SERVER_URL,
     STATE_FILEPATH
 )
-from configs.web3 import ABI_FILEPATH, ENDPOINT
+from configs.web3 import ENDPOINT, MANAGER_CONTRACTS
 from tools.exceptions import NodeNotFoundException
 
 logger = logging.getLogger(__name__)
@@ -52,7 +52,7 @@ _config_first_read = True
 
 def init_skale():
     wallet = init_wallet()
-    return Skale(ENDPOINT, ABI_FILEPATH, wallet, state_path=STATE_FILEPATH)
+    return SkaleManager(ENDPOINT, MANAGER_CONTRACTS, wallet, state_path=STATE_FILEPATH)
 
 
 def init_wallet(pool=DEFAULT_POOL):
@@ -107,7 +107,7 @@ def get_id_from_config(node_config_filepath) -> int:
     wait=tenacity.wait_fixed(CONFIG_CHECK_PERIOD),
     retry=tenacity.retry_if_exception_type(KeyError) | tenacity.retry_if_exception_type(
         FileNotFoundError))
-def get_sgx_keyname_from_config(node_config_filepath) -> int:
+def get_sgx_keyname_from_config(node_config_filepath) -> str:
     """Gets sgx keyname from config file."""
     global _config_first_read
     try:
