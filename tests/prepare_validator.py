@@ -1,10 +1,11 @@
 import os
 from datetime import datetime
 
-from skale import Skale
+from skale import SkaleManager
 from skale.utils.web3_utils import init_web3
 from skale.wallets import Web3Wallet
 from skale.utils.contracts_provision.main import add_test_permissions
+from skale.utils.helper import get_skale_manager_address
 
 
 from tests.constants import (D_VALIDATOR_DESC, D_VALIDATOR_FEE, D_VALIDATOR_ID,
@@ -120,7 +121,8 @@ def skip_evm_time(web3, seconds) -> int:
 def init_skale():
     web3 = init_web3(ENDPOINT)
     wallet = Web3Wallet(ETH_PRIVATE_KEY, web3)
-    return Skale(ENDPOINT, TEST_ABI_FILEPATH, wallet)
+    manager_address = get_skale_manager_address(TEST_ABI_FILEPATH)
+    return SkaleManager(ENDPOINT, manager_address, wallet)
 
 
 if __name__ == "__main__":

@@ -1,10 +1,10 @@
 """ SKALE config test """
 
 import pytest
-from skale import Skale
+from skale import SkaleManager
 from skale.utils.web3_utils import init_web3
 from skale.wallets import Web3Wallet
-
+from skale.utils.helper import get_skale_manager_address
 from tests.constants import (ENDPOINT, ETH_PRIVATE_KEY, N_TEST_NODES,
                              TEST_ABI_FILEPATH)
 from tests.prepare_validator import (create_dirs, create_set_of_nodes,
@@ -16,7 +16,8 @@ def skale():
     """Returns a SKALE instance with provider from config"""
     web3 = init_web3(ENDPOINT)
     wallet = Web3Wallet(ETH_PRIVATE_KEY, web3)
-    skale = Skale(ENDPOINT, TEST_ABI_FILEPATH, wallet)
+    manager_address = get_skale_manager_address(TEST_ABI_FILEPATH)
+    skale = SkaleManager(ENDPOINT, manager_address, wallet)
 
     create_dirs()
     ids = get_active_ids(skale)
