@@ -1,0 +1,43 @@
+[project]
+name = "bounty-agent"
+version = "3.1.0"
+requires-python = ">=3.13"
+dependencies = [
+    "apscheduler==3.11.0",
+    "peewee==3.18.2",
+    "schedule==1.2.2",
+    "skale.py==7.6dev3",
+    "tenacity==9.1.2",
+]
+[project.optional-dependencies]
+dev = ["ruff==0.14.1", "mypy==1.18.2"]
+test = [
+    "pytest==8.4.2",
+    "pytest-cov==7.0.0",
+    "freezegun==1.5.5",
+    "codecov==2.1.13",
+]
+
+[tool.pytest.ini_options]
+log_cli = false
+log_cli_level = "INFO"
+log_cli_format = "[%(asctime)s] [%(levelname)8s] [%(threadName)s] %(message)s (%(filename)s:%(lineno)s)"
+log_cli_date_format = "%Y-%m-%d %H:%M:%S"
+filterwarnings = ["ignore::DeprecationWarning"]
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I"]
+
+[tool.ruff.format]
+quote-style = "single"
+
+[tool.mypy]
+python_version = "3.13"
+warn_unused_configs = true
+ignore_missing_imports = true
+
+[tool.coverage.run]
+omit = ["tests/*", "helper-scripts/*", "venv/*", "configs/*"]

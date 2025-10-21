@@ -131,3 +131,7 @@ dmypy.json
 # Editors
 .vscode/
 .idea/
+
+uv.lock
+skale_node_data/
+skale_vol/
