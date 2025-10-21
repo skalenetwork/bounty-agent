@@ -7,3 +7,7 @@ export SKALE_VOLUME_PATH=$DIR/../skale_vol
 export NODE_DATA_PATH=$DIR/../skale_node_data
 export PYTHONPATH=$PYTHONPATH:.
 export ALLOWED_TS_DIFF=-1
+
+if [ -z "${ETH_PRIVATE_KEY}" ]; then
+    export ETH_PRIVATE_KEY=$(cat $PWD/helper-scripts/private_key.txt)
+fi

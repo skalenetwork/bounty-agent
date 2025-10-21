@@ -5,11 +5,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     env:
-      ETH_PRIVATE_KEY: ${{ secrets.ETH_PRIVATE_KEY }}
-      ENDPOINT: ${{ secrets.ENDPOINT }}
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-      MANAGER_TAG: "1.12.0-develop.21"
-      RUN_ANVIL: true
 
     steps:
       - uses: actions/checkout@v2
@@ -41,8 +37,15 @@ jobs:
       - name: Type check with mypy
         run: uv run mypy .
 
+      - name: Export env
+        run: |
+          . ./scripts/export_env.sh
+          printenv >> $GITHUB_ENV
+
       - name: Deploy skale manager
-        run: bash helper-scripts/deploy_manager.sh
+        run: |
+          export ETH_PRIVATE_KEY=$(cat helper-scripts/private_key.txt)
+          bash helper-scripts/deploy_manager.sh
 
       - name: Run tests
         run: bash scripts/run_tests.sh
