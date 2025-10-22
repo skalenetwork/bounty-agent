@@ -8,5 +8,5 @@ export DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 mkdir -p $DIR/../skale_vol/contracts_info
 mkdir -p $DIR/../skale_node_data
 
-python tests/prepare_validator.py
-ENV=DEV pytest -v -s --cov=./ tests/ --cov-report term-missing
+uv run python tests/prepare_validator.py
+ENV=DEV uv run pytest -v -s --cov=./ tests/ --cov-report term-missing
