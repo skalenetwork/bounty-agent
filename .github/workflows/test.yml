@@ -52,4 +52,4 @@ jobs:
 
       - name: Codecov
         run: |
-          codecov -t $CODECOV_TOKEN
+          uv run codecov -t $CODECOV_TOKEN
