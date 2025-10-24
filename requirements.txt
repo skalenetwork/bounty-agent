@@ -1,5 +1,0 @@
-apscheduler==3.6.3
-peewee==3.14.0
-schedule==0.6.0
-skale.py==7.0dev2
-tenacity==6.2.0

@@ -26,14 +26,8 @@ from logging import Formatter, StreamHandler
 from urllib.parse import urlparse
 
 from configs import SGX_SERVER_URL
+from configs.logs import LOG_BACKUP_COUNT, LOG_FILE_SIZE_BYTES, LOG_FOLDER, LOG_FORMAT
 from configs.web3 import ENDPOINT
-
-from configs.logs import (
-    LOG_BACKUP_COUNT,
-    LOG_FILE_SIZE_BYTES,
-    LOG_FOLDER,
-    LOG_FORMAT
-)
 
 
 def compose_hiding_patterns():

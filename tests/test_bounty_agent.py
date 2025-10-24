@@ -33,13 +33,13 @@ MINING_DELAY = 5
 REWARD_DATE_OFFSET = 10  # additional seconds to skip to ensure reward time is came
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope='module')
 def node_id(skale):
     ids = get_active_ids(skale)
     return len(ids) - 2
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope='module')
 def bounty_collector(skale, node_id):
     return bounty_agent.BountyAgent(skale, node_id)
 
@@ -67,18 +67,25 @@ def get_bounty_events(skale, node_id):
     from_block_number = skale.nodes.get(node_id)['start_block']
     to_block_number = skale.web3.eth.block_number
     logs = skale.manager.contract.events.BountyReceived.get_logs(
-        fromBlock=hex(from_block_number),
-        toBlock=hex(to_block_number))
+        from_block=hex(from_block_number), to_block=hex(to_block_number)
+    )
     bounty_events = []
     for log in logs:
         args = log['args']
         tx_block_number = log['blockNumber']
         block_data = skale.web3.eth.get_block(tx_block_number)
         block_timestamp = datetime.utcfromtimestamp(block_data['timestamp'])
-        bounty_events.append((args['nodeIndex'], args['averageLatency'],
-                              args['averageDowntime'], args['bounty'],
-                              log['transactionHash'].hex(),
-                              log['blockNumber'], block_timestamp))
+        bounty_events.append(
+            (
+                args['nodeIndex'],
+                args['averageLatency'],
+                args['averageDowntime'],
+                args['bounty'],
+                log['transactionHash'].hex(),
+                log['blockNumber'],
+                block_timestamp,
+            )
+        )
     return bounty_events
 
 

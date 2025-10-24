@@ -32,21 +32,21 @@ from skale.wallets import RedisWalletAdapter, SgxWallet
 from configs import (
     CONFIG_CHECK_PERIOD,
     DEFAULT_POOL,
-    NOTIFIER_URL,
     NODE_CONFIG_FILEPATH,
+    NOTIFIER_URL,
     REDIS_URI,
     SGX_CERTIFICATES_FOLDER,
     SGX_SERVER_URL,
-    STATE_FILEPATH
+    STATE_FILEPATH,
 )
 from configs.web3 import ENDPOINT, MANAGER_CONTRACTS
 from tools.exceptions import NodeNotFoundException
 
 logger = logging.getLogger(__name__)
 
-call_retry = tenacity.Retrying(stop=tenacity.stop_after_attempt(10),
-                               wait=tenacity.wait_fixed(2),
-                               reraise=True)
+call_retry = tenacity.Retrying(
+    stop=tenacity.stop_after_attempt(10), wait=tenacity.wait_fixed(2), reraise=True
+)
 _config_first_read = True
 
 
@@ -64,7 +64,7 @@ def init_wallet(pool=DEFAULT_POOL):
         web3=web3,
         sgx_endpoint=SGX_SERVER_URL,
         key_name=sgx_keyname,
-        path_to_cert=SGX_CERTIFICATES_FOLDER
+        path_to_cert=SGX_CERTIFICATES_FOLDER,
     )
     return RedisWalletAdapter(rs, pool, sgx_wallet)
 
@@ -85,8 +85,9 @@ def check_if_node_is_registered(skale, node_id):
 
 @tenacity.retry(
     wait=tenacity.wait_fixed(CONFIG_CHECK_PERIOD),
-    retry=tenacity.retry_if_exception_type(KeyError) | tenacity.retry_if_exception_type(
-        FileNotFoundError))
+    retry=tenacity.retry_if_exception_type(KeyError)
+    | tenacity.retry_if_exception_type(FileNotFoundError),
+)
 def get_id_from_config(node_config_filepath) -> int:
     """Gets node ID from config file for agent initialization."""
     global _config_first_read
@@ -98,15 +99,17 @@ def get_id_from_config(node_config_filepath) -> int:
     except (FileNotFoundError, KeyError) as err:
         if _config_first_read:
             logger.warning(
-                'Cannot read a node id from config file - is the node already registered?')
+                'Cannot read a node id from config file - is the node already registered?'
+            )
             _config_first_read = False
         raise err
 
 
 @tenacity.retry(
     wait=tenacity.wait_fixed(CONFIG_CHECK_PERIOD),
-    retry=tenacity.retry_if_exception_type(KeyError) | tenacity.retry_if_exception_type(
-        FileNotFoundError))
+    retry=tenacity.retry_if_exception_type(KeyError)
+    | tenacity.retry_if_exception_type(FileNotFoundError),
+)
 def get_sgx_keyname_from_config(node_config_filepath) -> str:
     """Gets sgx keyname from config file."""
     global _config_first_read
@@ -117,8 +120,7 @@ def get_sgx_keyname_from_config(node_config_filepath) -> str:
         return data['sgx_key_name']
     except (FileNotFoundError, KeyError) as err:
         if _config_first_read:
-            logger.warning(
-                'Cannot read a sgx_key_name from config file?')
+            logger.warning('Cannot read a sgx_key_name from config file?')
             _config_first_read = False
         raise err
 
@@ -133,14 +135,13 @@ class MsgIcon(Enum):
 
 class Notifier:
     def __init__(self, cont_name, node_name, node_id, node_ip):
-        self.header = f'Container: {cont_name}, Node: {node_name}, ' \
-                      f'ID: {node_id}, IP: {node_ip}\n'
+        self.header = f'Container: {cont_name}, Node: {node_name}, ID: {node_id}, IP: {node_ip}\n'
 
     def send(self, message, icon=MsgIcon.ERROR):
         """Send message to telegram."""
         logger.info(message)
         header = f'{icon.value} {self.header}'
-        message_data = {"message": [header, message]}
+        message_data = {'message': [header, message]}
         try:
             response = requests.post(url=NOTIFIER_URL, json=message_data)
         except requests.exceptions.ConnectionError:

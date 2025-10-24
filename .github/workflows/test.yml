@@ -5,43 +5,51 @@ jobs:
   test:
     runs-on: ubuntu-latest
     env:
-      ETH_PRIVATE_KEY: ${{ secrets.ETH_PRIVATE_KEY }}
-      ENDPOINT: ${{ secrets.ENDPOINT }}
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-      DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-      DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-      MANAGER_TAG: "1.10.0-v1.10.0.0"
-      GANACHE: true
 
     steps:
-    - uses: actions/checkout@v2
-      with:
-        submodules: true
-    - name: Set up Python 3.11
-      uses: actions/setup-python@v1
-      with:
-        python-version: 3.11
-    - name: Install deps
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y build-essential
-    - name: Install python dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        pip install -r requirements-dev.txt
-    - name: Lint with flake8
-      run: |
-        flake8 .
-    - name: Deploy contracts manager
-      run: |
-        #
-        bash ./scripts/create_environment.sh
-    - name: Run tests
-      run: |
-        export PYTHONPATH=$PYTHONPATH:.
-        python tests/prepare_validator.py
-        ENV=DEV py.test -v -s --cov=./ tests/ --cov-report term-missing
-    - name: Codecov
-      run: |
-        codecov -t $CODECOV_TOKEN
+      - uses: actions/checkout@v5
+        with:
+          submodules: true
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.13
+
+      - name: Install deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - name: Set up Python 3.13
+        run: uv python install 3.13
+
+      - name: Install python dependencies
+        run: uv sync --all-extras --prerelease=allow
+
+      - name: Checking formatting with ruff
+        run: uv run ruff check
+
+      - name: Type check with mypy
+        run: uv run mypy .
+
+      - name: Export env
+        run: |
+          . ./scripts/export_env.sh
+          printenv >> $GITHUB_ENV
+
+      - name: Deploy skale manager
+        run: |
+          export ETH_PRIVATE_KEY=$(cat helper-scripts/private_key.txt)
+          bash helper-scripts/deploy_manager.sh
+
+      - name: Run tests
+        run: bash scripts/run_tests.sh
+
+      - name: Codecov
+        run: |
+          uv run codecov -t $CODECOV_TOKEN
