@@ -26,6 +26,7 @@ import redis
 import requests
 import tenacity
 from skale import SkaleManager
+from skale.core.settings import SkaleSettings, get_settings
 from skale.utils.web3_utils import init_web3
 from skale.wallets import RedisWalletAdapter, SgxWallet
 
@@ -51,20 +52,21 @@ _config_first_read = True
 
 
 def init_skale():
-    wallet = init_wallet()
-    return SkaleManager(ENDPOINT, MANAGER_CONTRACTS, wallet, state_path=STATE_FILEPATH)
+    st = get_settings(SkaleSettings)
+    wallet = init_wallet(endpoint=str(st.endpoint), sgx_server_url=str(st.sgx_url))
+    return SkaleManager(str(st.endpoint), st.manager_contracts, wallet, state_path=STATE_FILEPATH)
 
 
-def init_wallet(pool=DEFAULT_POOL):
+def init_wallet(endpoint, sgx_server_url, pool=DEFAULT_POOL):
     sgx_keyname = get_sgx_keyname_from_config(NODE_CONFIG_FILEPATH)
     cpool = redis.ConnectionPool.from_url(REDIS_URI)
     rs = redis.Redis(connection_pool=cpool)
-    web3 = init_web3(ENDPOINT)
+    web3 = init_web3(endpoint)
     sgx_wallet = SgxWallet(
         web3=web3,
-        sgx_endpoint=SGX_SERVER_URL,
+        sgx_endpoint=sgx_server_url,
         key_name=sgx_keyname,
-        path_to_cert=SGX_CERTIFICATES_FOLDER,
+        path_to_cert=str(SGX_CERTIFICATES_FOLDER),
     )
     return RedisWalletAdapter(rs, pool, sgx_wallet)
 
