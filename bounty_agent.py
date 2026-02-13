@@ -25,7 +25,7 @@ Agent requests to receive available reward for validation work.
 import logging
 import socket
 import time
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import tenacity
 from apscheduler.events import EVENT_JOB_ERROR, EVENT_JOB_EXECUTED
@@ -90,7 +90,7 @@ class BountyAgent:
         except Exception as err:
             self.notifier.send(f'Cannot get reward date from SKALE Manager: {err}', MsgIcon.ERROR)
             raise
-        return datetime.utcfromtimestamp(reward_date)
+        return datetime.fromtimestamp(reward_date, timezone.utc)
 
     def get_bounty(self):
         try:
@@ -134,7 +134,7 @@ class BountyAgent:
         reward_date = self.get_reward_date()
         last_block_number = self.skale.web3.eth.block_number
         block_data = call_retry(self.skale.web3.eth.get_block, last_block_number)
-        block_timestamp = datetime.utcfromtimestamp(block_data['timestamp'])
+        block_timestamp = datetime.fromtimestamp(block_data['timestamp'], timezone.utc)
         self.logger.info(f'Reward date: {reward_date}')
         self.logger.info(f'Block timestamp:  {block_timestamp}')
         if reward_date > block_timestamp:
@@ -145,7 +145,7 @@ class BountyAgent:
     def job_listener(self, event):
         if event.exception:
             self.logger.info('"Get Bounty" job failed')
-            utc_now = datetime.utcnow()
+            utc_now = datetime.now(timezone.utc)
             self.scheduler.add_job(
                 self.job, 'date', run_date=utc_now + timedelta(seconds=DELAY_AFTER_ERR)
             )
@@ -156,7 +156,7 @@ class BountyAgent:
                 reward_date = self.get_reward_date()
                 self.notifier.send(f'Next reward date: {reward_date}', MsgIcon.BOUNTY)
             except Exception:
-                reward_date = datetime.utcnow() + timedelta(seconds=DELAY_AFTER_ERR)
+                reward_date = datetime.now(timezone.utc) + timedelta(seconds=DELAY_AFTER_ERR)
                 self.logger.info(f'Next try to get reward date: {reward_date}')
             self.scheduler.add_job(self.job, 'date', run_date=reward_date)
             self.scheduler.print_jobs()
@@ -165,7 +165,7 @@ class BountyAgent:
         """Starts agent."""
         reward_date = self.get_reward_date()
         self.logger.info(f"Next reward date on agent's start: {reward_date}")
-        utc_now = datetime.utcnow()
+        utc_now = datetime.now(timezone.utc)
         if utc_now > reward_date:
             reward_date = utc_now
         self.scheduler.add_job(self.job, 'date', run_date=reward_date)
