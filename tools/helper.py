@@ -37,10 +37,7 @@ from configs import (
     NOTIFIER_URL,
     REDIS_URI,
     SGX_CERTIFICATES_FOLDER,
-    SGX_SERVER_URL,
-    STATE_FILEPATH,
 )
-from configs.web3 import ENDPOINT, MANAGER_CONTRACTS
 from tools.exceptions import NodeNotFoundException
 
 logger = logging.getLogger(__name__)
@@ -54,7 +51,7 @@ _config_first_read = True
 def init_skale():
     st = get_settings(SkaleSettings)
     wallet = init_wallet(endpoint=str(st.endpoint), sgx_server_url=str(st.sgx_url))
-    return SkaleManager(str(st.endpoint), st.manager_contracts, wallet, state_path=STATE_FILEPATH)
+    return SkaleManager(str(st.endpoint), st.manager_contracts, wallet)
 
 
 def init_wallet(endpoint, sgx_server_url, pool=DEFAULT_POOL):
