@@ -4,6 +4,7 @@ import os
 
 import pytest
 from skale import SkaleManager
+from skale.core.settings import SkaleSettings
 from skale.utils.helper import get_skale_manager_address
 from skale.utils.web3_utils import init_web3
 from skale.wallets import Web3Wallet
@@ -17,6 +18,13 @@ def setup_test_paths():
     """Override paths for test environment"""
     os.environ['SKALE_VOLUME_PATH'] = './skale_vol'
     os.environ['NODE_DATA_PATH'] = './skale_node_data'
+
+
+@pytest.fixture(scope='session')
+def settings():
+    if 'SGX_SERVER_URL' not in os.environ:
+        os.environ['SGX_SERVER_URL'] = 'http://localhost:1026'
+    return SkaleSettings()
 
 
 @pytest.fixture(scope='session')

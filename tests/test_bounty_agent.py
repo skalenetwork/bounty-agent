@@ -18,7 +18,7 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pytest
 from freezegun import freeze_time
@@ -40,8 +40,8 @@ def node_id(skale):
 
 
 @pytest.fixture(scope='module')
-def bounty_collector(skale, node_id):
-    return bounty_agent.BountyAgent(skale, node_id)
+def bounty_collector(skale, settings, node_id):
+    return bounty_agent.BountyAgent(skale, settings, node_id)
 
 
 def test_check_if_node_is_registered(skale, node_id):
@@ -54,7 +54,7 @@ def test_check_if_node_is_registered(skale, node_id):
 def test_get_bounty_neg(skale, bounty_collector):
     last_block_number = skale.web3.eth.block_number
     block_data = skale.web3.eth.get_block(last_block_number)
-    block_timestamp = datetime.utcfromtimestamp(block_data['timestamp'])
+    block_timestamp = datetime.fromtimestamp(block_data['timestamp'], timezone.utc)
     reward_date = bounty_collector.get_reward_date()
     print(f'Reward date: {reward_date}')
     print(f'Timestamp: {block_timestamp}')
@@ -74,7 +74,7 @@ def get_bounty_events(skale, node_id):
         args = log['args']
         tx_block_number = log['blockNumber']
         block_data = skale.web3.eth.get_block(tx_block_number)
-        block_timestamp = datetime.utcfromtimestamp(block_data['timestamp'])
+        block_timestamp = datetime.fromtimestamp(block_data['timestamp'], timezone.utc)
         bounty_events.append(
             (
                 args['nodeIndex'],
@@ -101,14 +101,14 @@ def test_bounty_job_saves_data(skale, bounty_collector):
     assert len(bounties) == 1
 
 
-def test_run_agent(skale, node_id):
-    bounty_collector = bounty_agent.BountyAgent(skale, node_id)
+def test_run_agent(skale, settings, node_id):
+    bounty_collector = bounty_agent.BountyAgent(skale, settings, node_id)
     reward_date = skale.nodes.contract.functions.getNodeNextRewardDate(bounty_collector.id).call()
     print(f'Reward date: {reward_date}')
     go_to_date(skale.web3, reward_date + REWARD_DATE_OFFSET)
     print('Latest block timestamp', skale.web3.eth.get_block('latest')['timestamp'])
 
-    with freeze_time(datetime.utcfromtimestamp(reward_date + REWARD_DATE_OFFSET)):
+    with freeze_time(datetime.fromtimestamp(reward_date + REWARD_DATE_OFFSET, timezone.utc)):
         bounty_collector.run()
         bounty_collector.stop()
 
