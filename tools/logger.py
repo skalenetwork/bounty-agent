@@ -97,7 +97,10 @@ def init_logger(sgx_url, endpoint):
 
 def init_agent_logger(agent_name, node_id, sgx_url, endpoint):
     log_path = get_log_filepath(agent_name, node_id)
-    handlers = [create_file_handler(log_path, sgx_url, endpoint), create_stream_handler(sgx_url, endpoint)]
+    handlers = [
+        create_file_handler(log_path, sgx_url, endpoint),
+        create_stream_handler(sgx_url, endpoint),
+    ]
     logging.basicConfig(level=logging.DEBUG, handlers=handlers)
 
 

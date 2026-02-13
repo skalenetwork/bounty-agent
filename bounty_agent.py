@@ -60,7 +60,13 @@ class BountyAgent:
     def __init__(self, skale, settings: SkaleSettings, node_id=None):
         self.agent_name = get_agent_name(self.__class__.__name__)
         self.logger = logging.getLogger(self.agent_name)
-        add_file_handler(self.logger, self.agent_name, node_id, str(settings.sgx_url), str(settings.endpoint))
+        add_file_handler(
+            self.logger,
+            self.agent_name,
+            node_id,
+            str(settings.sgx_url),
+            str(settings.endpoint),
+        )
         self.logger.info(f'Initialization of {self.agent_name} ...')
         if node_id is None:
             self.id = get_id_from_config(NODE_CONFIG_FILEPATH)

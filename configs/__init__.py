@@ -1,8 +1,7 @@
 import os
 from pathlib import Path
-from skale.core.settings import (
-    SkaleSettings,
-)
+
+from skale.core.settings import SkaleSettings
 
 ENV = os.environ.get('ENV')
 
