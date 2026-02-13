@@ -23,21 +23,26 @@ import os
 import re
 import sys
 from logging import Formatter, StreamHandler
-from urllib.parse import urlparse
 
-from configs import SGX_SERVER_URL
-from configs.logs import LOG_BACKUP_COUNT, LOG_FILE_SIZE_BYTES, LOG_FOLDER, LOG_FORMAT
-from configs.web3 import ENDPOINT
+from configs.logs import (
+    LOG_BACKUP_COUNT,
+    LOG_FILE_SIZE_BYTES,
+    LOG_FOLDER,
+    LOG_FORMAT,
+)
 
 
-def compose_hiding_patterns():
-    sgx_ip = urlparse(SGX_SERVER_URL).hostname
-    eth_ip = urlparse(ENDPOINT).hostname
-    return {
-        rf'{sgx_ip}': '[SGX_IP]',
-        rf'{eth_ip}': '[ETH_IP]',
-        r'NEK\:\w+': '[SGX_KEY]'
-    }
+def compose_hiding_patterns(sgx_url, endpoint):
+    from urllib.parse import urlparse
+    sgx_ip = urlparse(sgx_url).hostname if sgx_url else None
+    eth_ip = urlparse(endpoint).hostname if endpoint else None
+    patterns = {}
+    if sgx_ip:
+        patterns[rf'{sgx_ip}'] = '[SGX_IP]'
+    if eth_ip:
+        patterns[rf'{eth_ip}'] = '[ETH_IP]'
+    patterns[r'NEK\:\w+'] = '[SGX_KEY]'
+    return patterns
 
 
 class HidingFormatter(Formatter):
@@ -64,8 +69,8 @@ class HidingFormatter(Formatter):
         return self._filter_sensitive(msg)
 
 
-def create_file_handler(log_file_path):
-    formatter = HidingFormatter(LOG_FORMAT, compose_hiding_patterns())
+def create_file_handler(log_file_path, sgx_url, endpoint):
+    formatter = HidingFormatter(LOG_FORMAT, compose_hiding_patterns(sgx_url, endpoint))
     f_handler = py_handlers.RotatingFileHandler(
         log_file_path,
         maxBytes=LOG_FILE_SIZE_BYTES,
@@ -77,27 +82,28 @@ def create_file_handler(log_file_path):
     return f_handler
 
 
-def create_stream_handler():
-    formatter = HidingFormatter(LOG_FORMAT, compose_hiding_patterns())
+def create_stream_handler(sgx_url, endpoint):
+    formatter = HidingFormatter(LOG_FORMAT, compose_hiding_patterns(sgx_url, endpoint))
     stream_handler = StreamHandler(sys.stderr)
     stream_handler.setFormatter(formatter)
     stream_handler.setLevel(logging.INFO)
     return stream_handler
 
 
-def init_logger():
-    handlers = [create_stream_handler()]
+def init_logger(sgx_url, endpoint):
+    handlers = [create_stream_handler(sgx_url, endpoint)]
     logging.basicConfig(level=logging.DEBUG, handlers=handlers)
 
 
-def init_agent_logger(agent_name, node_id):
+def init_agent_logger(agent_name, node_id, sgx_url, endpoint):
     log_path = get_log_filepath(agent_name, node_id)
-    init_logger(log_path)
+    handlers = [create_file_handler(log_path, sgx_url, endpoint), create_stream_handler(sgx_url, endpoint)]
+    logging.basicConfig(level=logging.DEBUG, handlers=handlers)
 
 
-def add_file_handler(logger, agent_name, node_id):
+def add_file_handler(logger, agent_name, node_id, sgx_url, endpoint):
     log_path = get_log_filepath(agent_name, node_id)
-    logger.addHandler(create_file_handler(log_path))
+    logger.addHandler(create_file_handler(log_path, sgx_url, endpoint))
 
 
 def get_log_filepath(agent_name, node_id):

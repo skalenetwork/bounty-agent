@@ -30,6 +30,7 @@ from datetime import datetime, timedelta, timezone
 import tenacity
 from apscheduler.events import EVENT_JOB_ERROR, EVENT_JOB_EXECUTED
 from apscheduler.schedulers.background import BackgroundScheduler
+from skale.core.settings import SkaleSettings, get_settings
 from skale.transactions.exceptions import TransactionError
 from web3.logs import DISCARD
 
@@ -59,7 +60,8 @@ class BountyAgent:
     def __init__(self, skale, node_id=None):
         self.agent_name = get_agent_name(self.__class__.__name__)
         self.logger = logging.getLogger(self.agent_name)
-        add_file_handler(self.logger, self.agent_name, node_id)
+        st = get_settings(SkaleSettings)
+        add_file_handler(self.logger, self.agent_name, node_id, str(st.sgx_url), str(st.endpoint))
         self.logger.info(f'Initialization of {self.agent_name} ...')
         if node_id is None:
             self.id = get_id_from_config(NODE_CONFIG_FILEPATH)
@@ -179,7 +181,8 @@ class BountyAgent:
 
 
 if __name__ == '__main__':
-    init_logger()
+    st = get_settings(SkaleSettings)
+    init_logger(str(st.sgx_url), str(st.endpoint))
     while True:
         try:
             skale = init_skale()

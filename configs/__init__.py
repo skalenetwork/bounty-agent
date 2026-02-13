@@ -24,8 +24,6 @@ CONFIG_CHECK_PERIOD = 30  # in seconds
 MISFIRE_GRACE_TIME = 365 * 24 * 60 * 60  # in seconds
 DELAY_AFTER_ERR = 60  # in seconds
 
-SGX_SERVER_URL = os.getenv('SGX_SERVER_URL')
-
 SGX_CERTIFICATES_FOLDER = NODE_DATA_PATH / 'sgx_certs'
 
 DEFAULT_POOL = 'transactions'
