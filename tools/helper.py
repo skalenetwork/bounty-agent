@@ -73,7 +73,7 @@ def get_agent_name(name):
 
 
 def check_if_node_is_registered(skale, node_id):
-    if 0 <= node_id < skale.nodes.get_nodes_number():
+    if 0 <= node_id < skale.nodes.nodes_number():
         return True
     else:
         err_msg = f'There is no Node with ID = {node_id} in SKALE manager'
