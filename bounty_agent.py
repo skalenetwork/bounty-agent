@@ -57,11 +57,10 @@ logger = logging.getLogger(__name__)
 
 
 class BountyAgent:
-    def __init__(self, skale, node_id=None):
+    def __init__(self, skale, settings: SkaleSettings, node_id=None):
         self.agent_name = get_agent_name(self.__class__.__name__)
         self.logger = logging.getLogger(self.agent_name)
-        st = get_settings(SkaleSettings)
-        add_file_handler(self.logger, self.agent_name, node_id, str(st.sgx_url), str(st.endpoint))
+        add_file_handler(self.logger, self.agent_name, node_id, str(settings.sgx_url), str(settings.endpoint))
         self.logger.info(f'Initialization of {self.agent_name} ...')
         if node_id is None:
             self.id = get_id_from_config(NODE_CONFIG_FILEPATH)
@@ -185,8 +184,8 @@ if __name__ == '__main__':
     init_logger(str(st.sgx_url), str(st.endpoint))
     while True:
         try:
-            skale = init_skale()
-            bounty_agent = BountyAgent(skale)
+            skale = init_skale(st)
+            bounty_agent = BountyAgent(skale, settings=st)
             bounty_agent.run()
             while not bounty_agent.is_stopped:
                 time.sleep(1)

@@ -26,7 +26,7 @@ import redis
 import requests
 import tenacity
 from skale import SkaleManager
-from skale.core.settings import SkaleSettings, get_settings
+from skale.core.settings import SkaleSettings
 from skale.utils.web3_utils import init_web3
 from skale.wallets import RedisWalletAdapter, SgxWallet
 
@@ -48,10 +48,9 @@ call_retry = tenacity.Retrying(
 _config_first_read = True
 
 
-def init_skale():
-    st = get_settings(SkaleSettings)
-    wallet = init_wallet(endpoint=str(st.endpoint), sgx_server_url=str(st.sgx_url))
-    return SkaleManager(str(st.endpoint), st.manager_contracts, wallet)
+def init_skale(settings: SkaleSettings):
+    wallet = init_wallet(endpoint=str(settings.endpoint), sgx_server_url=str(settings.sgx_url))
+    return SkaleManager(str(settings.endpoint), settings.manager_contracts, wallet)
 
 
 def init_wallet(endpoint, sgx_server_url, pool=DEFAULT_POOL):
