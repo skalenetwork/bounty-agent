@@ -7,3 +7,4 @@ export SKALE_VOLUME_PATH=$DIR/../skale_vol
 export NODE_DATA_PATH=$DIR/../skale_node_data
 export PYTHONPATH=$PYTHONPATH:.
 export ALLOWED_TS_DIFF=-1
+export DEFAULT_GAS_PRICE_WEI=1000000000
