@@ -31,25 +31,17 @@ def setup_test_paths():
 
 @pytest.fixture(scope='session')
 def settings():
-    # Set fake defaults for tests to pass Pydantic validation
-    defaults = {
-        'ENV_TYPE': 'devnet',
-        'NODE_VERSION': '0.0.0',
-        'BLOCK_DEVICE': '/dev/sda',
-        'MANAGER_CONTRACTS': '0x' + '0' * 40,
-        'IMA_CONTRACTS': '0x' + '0' * 40,
-        'DOCKER_LVMPY_VERSION': '0.0.0',
-        'DOCKER_IMAGE': 'skalenetwork/skale-node:0.0.0',
-        'SGX_URL': 'http://localhost:1026',
-        'SGX_SERVER_URL': 'http://localhost:1026',
-        'DEFAULT_GAS_PRICE_WEI': '1000000000',  # 1 Gwei string for env var
-    }
-
-    for key, value in defaults.items():
-        if key not in os.environ:
-            os.environ[key] = str(value)
-
-    return SkaleSettings()
+    return SkaleSettings(
+        env_type='devnet',
+        endpoint='http://127.0.0.1:8545',
+        node_version='0.0.0',
+        block_device='/dev/sda',
+        manager_contracts='0x' + '0' * 40,
+        ima_contracts='0x' + '0' * 40,
+        docker_lvmpy_version='0.0.0',
+        sgx_url='http://localhost:1026',
+        default_gas_price_wei=1000000000,
+    )
 
 
 @pytest.fixture(scope='session')
