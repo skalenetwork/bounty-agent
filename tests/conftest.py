@@ -31,12 +31,13 @@ def setup_test_paths():
 
 @pytest.fixture(scope='session')
 def settings():
+    manager_address = get_skale_manager_address(TEST_ABI_FILEPATH)
     return SkaleSettings(
         env_type='devnet',
-        endpoint='http://127.0.0.1:8545',
+        endpoint=ENDPOINT,
         node_version='0.0.0',
         block_device='/dev/sda',
-        manager_contracts='0x' + '0' * 40,
+        manager_contracts=manager_address,
         ima_contracts='0x' + '0' * 40,
         docker_lvmpy_version='0.0.0',
         sgx_url='http://localhost:1026',
@@ -45,12 +46,11 @@ def settings():
 
 
 @pytest.fixture(scope='session')
-def skale():
+def skale(settings):
     """Returns a SKALE instance with provider from config"""
-    web3 = init_web3(ENDPOINT)
+    web3 = init_web3(str(settings.endpoint))
     wallet = Web3Wallet(ETH_PRIVATE_KEY, web3)
-    manager_address = get_skale_manager_address(TEST_ABI_FILEPATH)
-    skale = SkaleManager(ENDPOINT, manager_address, wallet)
+    skale = SkaleManager(str(settings.endpoint), settings.manager_contracts, wallet)
 
     create_dirs()
 
