@@ -26,6 +26,7 @@ import redis
 import requests
 import tenacity
 from skale import SkaleManager
+from skale.core.settings import SkaleSettings
 from skale.utils.web3_utils import init_web3
 from skale.wallets import RedisWalletAdapter, SgxWallet
 
@@ -36,10 +37,7 @@ from configs import (
     NOTIFIER_URL,
     REDIS_URI,
     SGX_CERTIFICATES_FOLDER,
-    SGX_SERVER_URL,
-    STATE_FILEPATH,
 )
-from configs.web3 import ENDPOINT, MANAGER_CONTRACTS
 from tools.exceptions import NodeNotFoundException
 
 logger = logging.getLogger(__name__)
@@ -50,21 +48,21 @@ call_retry = tenacity.Retrying(
 _config_first_read = True
 
 
-def init_skale():
-    wallet = init_wallet()
-    return SkaleManager(ENDPOINT, MANAGER_CONTRACTS, wallet, state_path=STATE_FILEPATH)
+def init_skale(settings: SkaleSettings):
+    wallet = init_wallet(endpoint=str(settings.endpoint), sgx_server_url=str(settings.sgx_url))
+    return SkaleManager(str(settings.endpoint), settings.manager_contracts, wallet)
 
 
-def init_wallet(pool=DEFAULT_POOL):
+def init_wallet(endpoint, sgx_server_url, pool=DEFAULT_POOL):
     sgx_keyname = get_sgx_keyname_from_config(NODE_CONFIG_FILEPATH)
     cpool = redis.ConnectionPool.from_url(REDIS_URI)
     rs = redis.Redis(connection_pool=cpool)
-    web3 = init_web3(ENDPOINT)
+    web3 = init_web3(endpoint)
     sgx_wallet = SgxWallet(
         web3=web3,
-        sgx_endpoint=SGX_SERVER_URL,
+        sgx_endpoint=sgx_server_url,
         key_name=sgx_keyname,
-        path_to_cert=SGX_CERTIFICATES_FOLDER,
+        path_to_cert=str(SGX_CERTIFICATES_FOLDER),
     )
     return RedisWalletAdapter(rs, pool, sgx_wallet)
 
@@ -75,7 +73,7 @@ def get_agent_name(name):
 
 
 def check_if_node_is_registered(skale, node_id):
-    if 0 <= node_id < skale.nodes.get_nodes_number():
+    if 0 <= node_id < skale.nodes.nodes_number():
         return True
     else:
         err_msg = f'There is no Node with ID = {node_id} in SKALE manager'

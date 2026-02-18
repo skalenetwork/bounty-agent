@@ -25,11 +25,12 @@ Agent requests to receive available reward for validation work.
 import logging
 import socket
 import time
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import tenacity
 from apscheduler.events import EVENT_JOB_ERROR, EVENT_JOB_EXECUTED
 from apscheduler.schedulers.background import BackgroundScheduler
+from skale.core.settings import SkaleSettings, get_settings
 from skale.transactions.exceptions import TransactionError
 from web3.logs import DISCARD
 
@@ -56,10 +57,16 @@ logger = logging.getLogger(__name__)
 
 
 class BountyAgent:
-    def __init__(self, skale, node_id=None):
+    def __init__(self, skale, settings: SkaleSettings, node_id=None):
         self.agent_name = get_agent_name(self.__class__.__name__)
         self.logger = logging.getLogger(self.agent_name)
-        add_file_handler(self.logger, self.agent_name, node_id)
+        add_file_handler(
+            self.logger,
+            self.agent_name,
+            node_id,
+            str(settings.sgx_url),
+            str(settings.endpoint),
+        )
         self.logger.info(f'Initialization of {self.agent_name} ...')
         if node_id is None:
             self.id = get_id_from_config(NODE_CONFIG_FILEPATH)
@@ -90,7 +97,7 @@ class BountyAgent:
         except Exception as err:
             self.notifier.send(f'Cannot get reward date from SKALE Manager: {err}', MsgIcon.ERROR)
             raise
-        return datetime.utcfromtimestamp(reward_date)
+        return datetime.fromtimestamp(reward_date, timezone.utc)
 
     def get_bounty(self):
         try:
@@ -134,7 +141,7 @@ class BountyAgent:
         reward_date = self.get_reward_date()
         last_block_number = self.skale.web3.eth.block_number
         block_data = call_retry(self.skale.web3.eth.get_block, last_block_number)
-        block_timestamp = datetime.utcfromtimestamp(block_data['timestamp'])
+        block_timestamp = datetime.fromtimestamp(block_data['timestamp'], timezone.utc)
         self.logger.info(f'Reward date: {reward_date}')
         self.logger.info(f'Block timestamp:  {block_timestamp}')
         if reward_date > block_timestamp:
@@ -145,7 +152,7 @@ class BountyAgent:
     def job_listener(self, event):
         if event.exception:
             self.logger.info('"Get Bounty" job failed')
-            utc_now = datetime.utcnow()
+            utc_now = datetime.now(timezone.utc)
             self.scheduler.add_job(
                 self.job, 'date', run_date=utc_now + timedelta(seconds=DELAY_AFTER_ERR)
             )
@@ -156,7 +163,7 @@ class BountyAgent:
                 reward_date = self.get_reward_date()
                 self.notifier.send(f'Next reward date: {reward_date}', MsgIcon.BOUNTY)
             except Exception:
-                reward_date = datetime.utcnow() + timedelta(seconds=DELAY_AFTER_ERR)
+                reward_date = datetime.now(timezone.utc) + timedelta(seconds=DELAY_AFTER_ERR)
                 self.logger.info(f'Next try to get reward date: {reward_date}')
             self.scheduler.add_job(self.job, 'date', run_date=reward_date)
             self.scheduler.print_jobs()
@@ -165,7 +172,7 @@ class BountyAgent:
         """Starts agent."""
         reward_date = self.get_reward_date()
         self.logger.info(f"Next reward date on agent's start: {reward_date}")
-        utc_now = datetime.utcnow()
+        utc_now = datetime.now(timezone.utc)
         if utc_now > reward_date:
             reward_date = utc_now
         self.scheduler.add_job(self.job, 'date', run_date=reward_date)
@@ -179,11 +186,12 @@ class BountyAgent:
 
 
 if __name__ == '__main__':
-    init_logger()
+    st = get_settings(SkaleSettings)
+    init_logger(str(st.sgx_url), str(st.endpoint))
     while True:
         try:
-            skale = init_skale()
-            bounty_agent = BountyAgent(skale)
+            skale = init_skale(st)
+            bounty_agent = BountyAgent(skale, settings=st)
             bounty_agent.run()
             while not bounty_agent.is_stopped:
                 time.sleep(1)

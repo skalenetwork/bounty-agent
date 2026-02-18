@@ -3,16 +3,16 @@ name = "bounty-agent"
 version = "3.1.0"
 requires-python = ">=3.13"
 dependencies = [
-    "apscheduler==3.11.0",
+    "apscheduler==3.11.2",
     "peewee==3.18.2",
     "schedule==1.2.2",
-    "skale.py==7.6dev3",
-    "tenacity==9.1.2",
+    "skale.py==7.13dev1",
+    "tenacity==9.1.4",
 ]
 [project.optional-dependencies]
-dev = ["ruff==0.14.1", "mypy==1.18.2"]
+dev = ["ruff==0.15.1", "mypy==1.19.1"]
 test = [
-    "pytest==8.4.2",
+    "pytest==9.0.2",
     "pytest-cov==7.0.0",
     "freezegun==1.5.5",
     "codecov==2.1.13",
@@ -24,6 +24,9 @@ log_cli_level = "INFO"
 log_cli_format = "[%(asctime)s] [%(levelname)8s] [%(threadName)s] %(message)s (%(filename)s:%(lineno)s)"
 log_cli_date_format = "%Y-%m-%d %H:%M:%S"
 filterwarnings = ["ignore::DeprecationWarning"]
+
+[tool.uv]
+prerelease = "allow"
 
 [tool.ruff]
 line-length = 100
