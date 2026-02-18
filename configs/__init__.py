@@ -28,6 +28,6 @@ SGX_CERTIFICATES_FOLDER = NODE_DATA_PATH / 'sgx_certs'
 DEFAULT_POOL = 'transactions'
 REDIS_URI = os.getenv('REDIS_URI', 'redis://@127.0.0.1:6379')
 
-SETTINGS_FOLDER_PATH: Path = SKALE_VOLUME_PATH / 'settings'
+SETTINGS_FOLDER_PATH: Path = NODE_DATA_PATH / 'settings'
 NODE_SETTINGS_PATH: Path = SETTINGS_FOLDER_PATH / 'node.toml'
 SkaleSettings.model_config['toml_file'] = NODE_SETTINGS_PATH
