@@ -1,7 +1,7 @@
 ![Test](https://github.com/skalenetwork/bounty-agent/workflows/Test/badge.svg)
 ![Build and publish](https://github.com/skalenetwork/bounty-agent/workflows/Build%20and%20publish/badge.svg)
 [![codecov](https://codecov.io/gh/skalenetwork/bounty-agent/branch/develop/graph/badge.svg)](https://codecov.io/gh/skalenetwork/bounty-agent)
-[![Codacy Badge](https://api.codacy.com/project/badge/Grade/84747976cadf49958eacbb48e7597f08)](https://www.codacy.com/gh/skalenetwork/bounty-agent?utm_source=github.com&utm_medium=referral&utm_content=skalenetwork/bounty-agent&utm_campaign=Badge_Grade)
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/84747976cadf49958eacbb48e7597f08)](https://www.codacy.com/gh/skalenetwork/bounty-agent?utm_source=github.com\&utm_medium=referral\&utm_content=skalenetwork/bounty-agent\&utm_campaign=Badge_Grade)
 [![Discord](https://img.shields.io/discord/534485763354787851.svg)](https://discord.gg/vvUtWJB)
 
 # SKALE Bounty Agent
@@ -20,39 +20,54 @@ Bounty Agent is still in active development and therefore should be regarded as 
 
 ### Requirements
 
-Python ≥ 3.6.5
+Python ≥ 3.13
 
-### Install Dependencies
+### Dependencies
+
+Install `uv`:
 
 ```bash
-pip install -r requirements.txt
-pip install -r requirements-dev.txt
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+Install all dependencies:
+
+```bash
+uv sync --prerelease=allow --all-extras
+```
+
+### Linting and type checking
+
+#### Check linting/formatting issues
+
+```bash
+uv run ruff check
+```
+
+#### Check type issues
+
+```bash
+uv run mypy .
 ```
 
 ### Run tests locally
 
-#### Requirements for tests
-
-You have to change the name of `.env_template` file to `.env` and fill it out with your environment variables.
-Then run:
+1. Export environment variables:
 
 ```bash
-bash ./scripts/create_environment.sh
+. ./scripts/export_env.sh
 ```
 
-The script above: 
-1) runs MySQL docker container with required database and tables created
-2) runs Ganache docker container and deploys SKALE Manager contracts to it 
-Then run following script to create and enable a test validator and to make some additional preparations for tests:
+2. Deploy skale-manager:
 
 ```bash
-python tests/prepare_validator.py
+bash helper-scripts/deploy_manager.sh
 ```
 
-#### Run tests
+3. Run tests:
 
 ```bash
-py.test -v tests/
+bash ./scripts/run_tests.sh
 ```
 
 ### Build
@@ -63,15 +78,11 @@ For building Bounty agent docker image locally:
 docker build -t your-bounty-image-name .
 ```
 
-## Documentation
-
-_in process_
-
 ## For more information
 
--   [SKALE Network Website](https://skale.network)
--   [SKALE Network Twitter](https://twitter.com/SkaleNetwork)
--   [SKALE Network Blog](https://skale.network/blog)  
+* [SKALE Network Website](https://skale.space)
+* [SKALE Network Twitter](https://twitter.com/SkaleNetwork)
+* [SKALE Network Blog](https://skale.space/blog)
 
 Learn more about the SKALE community over on [Discord](http://skale.chat).
 
