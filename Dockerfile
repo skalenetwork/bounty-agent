@@ -1,9 +1,7 @@
-FROM ubuntu:24.04 AS builder
+FROM python:3.14-slim-trixie AS builder
 
-ARG PYTHON_VERSION=3.13
 ARG DEBIAN_FRONTEND=noninteractive
-ENV UV_LINK_MODE=copy \
-    UV_PYTHON_INSTALL_DIR=/opt/python
+ENV UV_LINK_MODE=copy
 
 COPY --from=ghcr.io/astral-sh/uv:0.11.16 /uv /usr/local/bin/uv
 
@@ -14,15 +12,14 @@ RUN apt-get update \
 WORKDIR /usr/src/bounty
 
 COPY pyproject.toml ./
-RUN uv python install "${PYTHON_VERSION}" \
-    && uv venv --python "${PYTHON_VERSION}" /opt/venv \
+RUN uv venv --python /usr/local/bin/python /opt/venv \
     && uv pip install \
         --python /opt/venv/bin/python \
         --prerelease=allow \
         --no-cache \
         --requirements pyproject.toml
 
-FROM ubuntu:24.04
+FROM python:3.14-slim-trixie
 
 ARG DEBIAN_FRONTEND=noninteractive
 ENV PATH="/opt/venv/bin:${PATH}" \
@@ -35,7 +32,6 @@ RUN apt-get update \
 
 WORKDIR /usr/src/admin
 
-COPY --from=builder /opt/python /opt/python
 COPY --from=builder /opt/venv /opt/venv
 COPY . .
 
