@@ -30,15 +30,14 @@ from datetime import datetime, timedelta, timezone
 import tenacity
 from apscheduler.events import EVENT_JOB_ERROR, EVENT_JOB_EXECUTED
 from apscheduler.schedulers.background import BackgroundScheduler
-from skale.core.settings import SkaleSettings, get_settings
 from skale.transactions.exceptions import TransactionError
+from skale_core.settings import SkaleSettings, get_settings
 from web3.logs import DISCARD
 
 from configs import (
     DELAY_AFTER_ERR,
     LONG_LINE,
     MISFIRE_GRACE_TIME,
-    NODE_CONFIG_FILEPATH,
     RETRY_INTERVAL,
 )
 from tools.exceptions import NotTimeForBountyException
@@ -47,29 +46,21 @@ from tools.helper import (
     Notifier,
     call_retry,
     check_if_node_is_registered,
-    get_agent_name,
-    get_id_from_config,
     init_skale,
+    read_node_config,
 )
-from tools.logger import add_file_handler, init_logger
+from tools.logger import init_logger
 
 logger = logging.getLogger(__name__)
 
 
 class BountyAgent:
-    def __init__(self, skale, settings: SkaleSettings, node_id=None):
-        self.agent_name = get_agent_name(self.__class__.__name__)
+    def __init__(self, skale, node_id=None):
+        self.agent_name = 'bounty-agent'
         self.logger = logging.getLogger(self.agent_name)
-        add_file_handler(
-            self.logger,
-            self.agent_name,
-            node_id,
-            str(settings.sgx_url),
-            str(settings.endpoint),
-        )
         self.logger.info(f'Initialization of {self.agent_name} ...')
         if node_id is None:
-            self.id = get_id_from_config(NODE_CONFIG_FILEPATH)
+            self.id = read_node_config('node_id')
         else:
             self.id = node_id
         self.skale = skale
@@ -107,7 +98,7 @@ class BountyAgent:
             raise
         self.logger.info('The bounty was successfully received')
         self.logger.debug(f'Receipt: {tx_res.receipt}')
-        tx_hash = tx_res.receipt['transactionHash'].hex()
+        tx_hash = tx_res.receipt['transactionHash'].to_0x_hex()
         self.logger.info(LONG_LINE)
 
         try:
@@ -129,7 +120,6 @@ class BountyAgent:
                 f'Bounty awarded to node: {bounty_in_skl:.3f} SKL.\nTX hash: {tx_hash}',
                 MsgIcon.BOUNTY,
             )
-        return tx_res.receipt['status']
 
     @tenacity.retry(
         wait=tenacity.wait_fixed(RETRY_INTERVAL),
@@ -139,14 +129,13 @@ class BountyAgent:
         """Periodic job."""
         self.logger.debug('"Get Bounty" job started')
         reward_date = self.get_reward_date()
-        last_block_number = self.skale.web3.eth.block_number
-        block_data = call_retry(self.skale.web3.eth.get_block, last_block_number)
+        block_data = call_retry(self.skale.web3.eth.get_block, 'latest')
         block_timestamp = datetime.fromtimestamp(block_data['timestamp'], timezone.utc)
         self.logger.info(f'Reward date: {reward_date}')
         self.logger.info(f'Block timestamp:  {block_timestamp}')
         if reward_date > block_timestamp:
             self.logger.info('Current block timestamp is less than reward time. Will try in 1 min')
-            raise NotTimeForBountyException(Exception)
+            raise NotTimeForBountyException
         self.get_bounty()
 
     def job_listener(self, event):
@@ -158,7 +147,7 @@ class BountyAgent:
             )
             self.logger.debug(self.scheduler.get_jobs())
         else:
-            self.logger.debug('"Get Bounty" job finished successfully)')
+            self.logger.debug('"Get Bounty" job finished successfully')
             try:
                 reward_date = self.get_reward_date()
                 self.notifier.send(f'Next reward date: {reward_date}', MsgIcon.BOUNTY)
@@ -191,10 +180,10 @@ if __name__ == '__main__':
     while True:
         try:
             skale = init_skale(st)
-            bounty_agent = BountyAgent(skale, settings=st)
+            bounty_agent = BountyAgent(skale)
             bounty_agent.run()
             while not bounty_agent.is_stopped:
                 time.sleep(1)
-                pass
         except Exception as e:
             logger.exception('Bounty agent failed with %s', e)
+            time.sleep(DELAY_AFTER_ERR)

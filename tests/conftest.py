@@ -1,58 +1,26 @@
 """SKALE config test"""
 
-import os
-
 import pytest
 from skale import SkaleManager
-from skale.core.settings import SkaleSettings
 from skale.utils.helper import get_skale_manager_address
 from skale.utils.web3_utils import init_web3
 from skale.wallets import Web3Wallet
 
+from configs import NODE_DATA_PATH
 from tests.constants import ENDPOINT, ETH_PRIVATE_KEY, N_TEST_NODES, TEST_ABI_FILEPATH
-from tests.prepare_validator import (
-    create_dirs,
-    create_set_of_nodes,
-    get_active_ids,
-    setup_validator,
-)
+from tests.prepare_validator import create_set_of_nodes, get_active_ids, setup_validator
 
 
 @pytest.fixture(scope='session', autouse=True)
-def setup_test_paths():
-    """Override paths for test environment"""
-    os.environ['SKALE_VOLUME_PATH'] = './skale_vol'
-    os.environ['NODE_DATA_PATH'] = './skale_node_data'
-
-    # Force low gas price for tests to avoid Insufficient Funds in local anvil
-    import skale.config as skale_config
-    skale_config.DEFAULT_GAS_PRICE = 1000000000  # 1 Gwei
+def node_data_dir():
+    NODE_DATA_PATH.mkdir(parents=True, exist_ok=True)
 
 
 @pytest.fixture(scope='session')
-def settings():
-    manager_address = get_skale_manager_address(TEST_ABI_FILEPATH)
-    return SkaleSettings(
-        env_type='devnet',
-        endpoint=ENDPOINT,
-        node_version='0.0.0',
-        block_device='/dev/sda',
-        manager_contracts=manager_address,
-        ima_contracts='0x' + '0' * 40,
-        docker_lvmpy_version='0.0.0',
-        sgx_url='http://localhost:1026',
-        default_gas_price_wei=1000000000,
-    )
-
-
-@pytest.fixture(scope='session')
-def skale(settings):
+def skale():
     """Returns a SKALE instance with provider from config"""
-    web3 = init_web3(str(settings.endpoint))
-    wallet = Web3Wallet(ETH_PRIVATE_KEY, web3)
-    skale = SkaleManager(str(settings.endpoint), settings.manager_contracts, wallet)
-
-    create_dirs()
+    wallet = Web3Wallet(ETH_PRIVATE_KEY, init_web3(ENDPOINT))
+    skale = SkaleManager(ENDPOINT, get_skale_manager_address(TEST_ABI_FILEPATH), wallet)
 
     setup_validator(skale)
 

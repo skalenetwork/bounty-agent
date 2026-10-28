@@ -6,21 +6,13 @@
 
 # SKALE Bounty Agent
 
-SKALE Bounty Agent is a part of each SKALE Node, and together is part of the SKALE Node Monitoring Service (NMS).
-Every SKALE node has a NMS group of N (e.g. 24) other nodes in the network randomly assigned to it. NMS groups regularly audit various node metrics at predetermined periods (e.g. five minutes), log these measurements to their local databases, and submit average metrics to the SKALE Manager Contract (SMC) once for every reward period - epoch (e.g. 30 days).
-
-Every node is rewarded for its validation efforts, based on results sent by NMS group of this node, at the end of each epoch.
-Bounty agent runs on every node of SKALE network, periodically requests available bounties for validation work from the SMC(once for every epoch).
-
-## An important note about production readiness
-
-Bounty Agent is still in active development and therefore should be regarded as alpha software. The development is still subject to security hardening, further testing, and breaking changes. This repository has not yet been reviewed or audited for security.
+SKALE Bounty Agent runs on every SKALE node and collects the node's bounty from SKALE Manager once per reward period.
 
 ## Development
 
 ### Requirements
 
-Python ≥ 3.13
+Python 3.14
 
 ### Dependencies
 
@@ -33,7 +25,7 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 Install all dependencies:
 
 ```bash
-uv sync --prerelease=allow --all-extras
+uv sync --all-extras
 ```
 
 ### Linting and type checking

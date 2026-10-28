@@ -3,11 +3,13 @@ on:
   pull_request:
     types: [closed]
     branches:
-      - master
       - develop
       - beta
       - stable
       - "v*.*.*"
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -17,13 +19,9 @@ jobs:
       DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
       DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           submodules: true
-      - name: Set up Python 3.14
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.14'
       - name: Build and publish container
         run: |
           export BRANCH=${GITHUB_REF##*/}
@@ -33,17 +31,13 @@ jobs:
           export VERSION=$(bash ./helper-scripts/calculate_version.sh)
           echo "VERSION=$VERSION" >> $GITHUB_ENV
           echo "Version $VERSION"
-          export RELEASE=true
-          ( test $BRANCH = "stable" && export PRERELEASE=false ) || export PRERELEASE=true
-          echo "PRERELEASE=$PRERELEASE" >> $GITHUB_ENV
-          echo "RELEASE=$RELEASE" >> $GITHUB_ENV
           export CONTAINER_NAME="bounty-agent"
           bash ./helper-scripts/build_and_publish.sh
       - name: Create Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ env.VERSION }}
+          target_commitish: ${{ github.sha }}
           name: ${{ env.VERSION }}
-          draft: false
           prerelease: ${{ github.base_ref != 'stable' }}
           generate_release_notes: true

@@ -1,32 +1,24 @@
 name: Test
-on: [push, pull_request]
+on: [push]
+
+permissions:
+  contents: read
 
 jobs:
   test:
     runs-on: ubuntu-24.04
-    env:
-      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           submodules: true
-      - name: Set up Python 3.14
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.14'
-
-      - name: Install deps
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v10.3.2
         with:
-          enable-cache: true
+          version: "0.13.6"
       - name: Install python dependencies
-        run: uv sync --all-extras --prerelease=allow
+        run: uv sync --all-extras
 
       - name: Checking formatting with ruff
         run: uv run ruff check
@@ -40,13 +32,13 @@ jobs:
           printenv >> $GITHUB_ENV
 
       - name: Deploy skale manager
-        run: |
-          export ETH_PRIVATE_KEY=$(cat helper-scripts/private_key.txt)
-          bash helper-scripts/deploy_manager.sh
+        run: bash helper-scripts/deploy_manager.sh
 
       - name: Run tests
         run: bash scripts/run_tests.sh
 
-      - name: Codecov
-        run: |
-          uv run codecov -t $CODECOV_TOKEN
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v7
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: coverage.xml

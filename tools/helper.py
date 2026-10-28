@@ -19,16 +19,15 @@
 
 import json
 import logging
-import re
 from enum import Enum
 
 import redis
 import requests
 import tenacity
 from skale import SkaleManager
-from skale.core.settings import SkaleSettings
 from skale.utils.web3_utils import init_web3
 from skale.wallets import RedisWalletAdapter, SgxWallet
+from skale_core.settings import SkaleSettings
 
 from configs import (
     CONFIG_CHECK_PERIOD,
@@ -54,7 +53,7 @@ def init_skale(settings: SkaleSettings):
 
 
 def init_wallet(endpoint, sgx_server_url, pool=DEFAULT_POOL):
-    sgx_keyname = get_sgx_keyname_from_config(NODE_CONFIG_FILEPATH)
+    sgx_keyname = read_node_config('sgx_key_name')
     cpool = redis.ConnectionPool.from_url(REDIS_URI)
     rs = redis.Redis(connection_pool=cpool)
     web3 = init_web3(endpoint)
@@ -65,11 +64,6 @@ def init_wallet(endpoint, sgx_server_url, pool=DEFAULT_POOL):
         path_to_cert=str(SGX_CERTIFICATES_FOLDER),
     )
     return RedisWalletAdapter(rs, pool, sgx_wallet)
-
-
-def get_agent_name(name):
-    name_parts = re.findall('[A-Z][^A-Z]*', name)
-    return '-'.join(name_parts).lower()
 
 
 def check_if_node_is_registered(skale, node_id):
@@ -83,52 +77,27 @@ def check_if_node_is_registered(skale, node_id):
 
 @tenacity.retry(
     wait=tenacity.wait_fixed(CONFIG_CHECK_PERIOD),
-    retry=tenacity.retry_if_exception_type(KeyError)
-    | tenacity.retry_if_exception_type(FileNotFoundError),
+    retry=tenacity.retry_if_exception_type((KeyError, FileNotFoundError)),
 )
-def get_id_from_config(node_config_filepath) -> int:
-    """Gets node ID from config file for agent initialization."""
+def read_node_config(key: str):
+    """Reads a value from the node config file, waiting until the node is registered."""
     global _config_first_read
     try:
-        logger.debug('Reading node id from config file...')
-        with open(node_config_filepath) as json_file:
-            data = json.load(json_file)
-        return data['node_id']
-    except (FileNotFoundError, KeyError) as err:
+        with open(NODE_CONFIG_FILEPATH) as json_file:
+            return json.load(json_file)[key]
+    except (FileNotFoundError, KeyError):
         if _config_first_read:
-            logger.warning(
-                'Cannot read a node id from config file - is the node already registered?'
-            )
+            logger.warning('Cannot read %s from node config - is the node already registered?', key)
             _config_first_read = False
-        raise err
-
-
-@tenacity.retry(
-    wait=tenacity.wait_fixed(CONFIG_CHECK_PERIOD),
-    retry=tenacity.retry_if_exception_type(KeyError)
-    | tenacity.retry_if_exception_type(FileNotFoundError),
-)
-def get_sgx_keyname_from_config(node_config_filepath) -> str:
-    """Gets sgx keyname from config file."""
-    global _config_first_read
-    try:
-        logger.debug('Reading node id from config file...')
-        with open(node_config_filepath) as json_file:
-            data = json.load(json_file)
-        return data['sgx_key_name']
-    except (FileNotFoundError, KeyError) as err:
-        if _config_first_read:
-            logger.warning('Cannot read a sgx_key_name from config file?')
-            _config_first_read = False
-        raise err
+        raise
 
 
 class MsgIcon(Enum):
     INFO = '\u2705'
     WARNING = '\u26a0\ufe0f'
     ERROR = '\u203c\ufe0f'
-    BOUNTY = '\ud83d\udcb0'
-    CRITICAL = '\ud83c\udd98'
+    BOUNTY = '\U0001f4b0'
+    CRITICAL = '\U0001f198'
 
 
 class Notifier:
@@ -141,20 +110,19 @@ class Notifier:
         header = f'{icon.value} {self.header}'
         message_data = {'message': [header, message]}
         try:
-            response = requests.post(url=NOTIFIER_URL, json=message_data)
+            response = requests.post(url=NOTIFIER_URL, json=message_data, timeout=10)
         except requests.exceptions.ConnectionError:
             logger.info(f'Cannot send Telegram notification (failed to connect to {NOTIFIER_URL})')
-            return 1
+            return
         except Exception as err:
             logger.info(f'Cannot notify validator {NOTIFIER_URL}. {err}')
-            return 1
+            return
         if response.status_code != requests.codes.ok:
             logger.info(f'Request to {NOTIFIER_URL} failed, status code: {response.status_code}')
-            return 1
+            return
 
         res = response.json()
         if res.get('status') == 'error':
             logger.info('Telegram notifications are not supported on the node')
-            return 1
+            return
         logger.debug('Message to validator was sent successfully')
-        return 0

@@ -20,14 +20,14 @@
 import json
 
 from configs import NODE_CONFIG_FILEPATH
-from tools.helper import get_id_from_config
+from tools.helper import read_node_config
 
 
-def test_get_id_from_config():
+def test_read_node_config():
     node_index = 1
 
     with open(NODE_CONFIG_FILEPATH, 'w') as json_file:
         json.dump({'node_id': node_index}, json_file)
 
-    node_id = get_id_from_config(NODE_CONFIG_FILEPATH)
+    node_id = read_node_config('node_id')
     assert node_id == node_index
