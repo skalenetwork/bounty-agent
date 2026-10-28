@@ -1,7 +1,6 @@
 ![Test](https://github.com/skalenetwork/bounty-agent/workflows/Test/badge.svg)
 ![Build and publish](https://github.com/skalenetwork/bounty-agent/workflows/Build%20and%20publish/badge.svg)
 [![codecov](https://codecov.io/gh/skalenetwork/bounty-agent/branch/develop/graph/badge.svg)](https://codecov.io/gh/skalenetwork/bounty-agent)
-[![Codacy Badge](https://api.codacy.com/project/badge/Grade/84747976cadf49958eacbb48e7597f08)](https://www.codacy.com/gh/skalenetwork/bounty-agent?utm_source=github.com\&utm_medium=referral\&utm_content=skalenetwork/bounty-agent\&utm_campaign=Badge_Grade)
 [![Discord](https://img.shields.io/discord/534485763354787851.svg)](https://discord.gg/vvUtWJB)
 
 # SKALE Bounty Agent
