@@ -19,21 +19,20 @@
 
 import logging
 import logging.handlers as py_handlers
-import os
 import re
 import sys
 from logging import Formatter, StreamHandler
+from urllib.parse import urlparse
 
 from configs.logs import (
     LOG_BACKUP_COUNT,
     LOG_FILE_SIZE_BYTES,
-    LOG_FOLDER,
     LOG_FORMAT,
+    LOG_PATH,
 )
 
 
 def compose_hiding_patterns(sgx_url, endpoint):
-    from urllib.parse import urlparse
     sgx_ip = urlparse(sgx_url).hostname if sgx_url else None
     eth_ip = urlparse(endpoint).hostname if endpoint else None
     patterns = {}
@@ -91,29 +90,8 @@ def create_stream_handler(sgx_url, endpoint):
 
 
 def init_logger(sgx_url, endpoint):
-    handlers = [create_stream_handler(sgx_url, endpoint)]
-    logging.basicConfig(level=logging.DEBUG, handlers=handlers)
-
-
-def init_agent_logger(agent_name, node_id, sgx_url, endpoint):
-    log_path = get_log_filepath(agent_name, node_id)
     handlers = [
-        create_file_handler(log_path, sgx_url, endpoint),
+        create_file_handler(LOG_PATH, sgx_url, endpoint),
         create_stream_handler(sgx_url, endpoint),
     ]
     logging.basicConfig(level=logging.DEBUG, handlers=handlers)
-
-
-def add_file_handler(logger, agent_name, node_id, sgx_url, endpoint):
-    log_path = get_log_filepath(agent_name, node_id)
-    logger.addHandler(create_file_handler(log_path, sgx_url, endpoint))
-
-
-def get_log_filepath(agent_name, node_id):
-    if node_id is None:  # production
-        log_filename = agent_name.lower() + ".log"
-    else:  # test
-        log_filename = agent_name.lower() + '_' + str(node_id) + ".log"
-    log_filepath = os.path.join(LOG_FOLDER, log_filename)
-
-    return log_filepath

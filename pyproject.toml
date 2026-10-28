@@ -1,35 +1,22 @@
 [project]
 name = "bounty-agent"
-version = "3.2.0"
-requires-python = ">=3.13"
+version = "3.3.0"
+requires-python = ">=3.14"
 dependencies = [
-    "apscheduler==3.11.2",
-    "peewee==3.18.2",
-    "schedule==1.2.2",
-    "skale.py==7.13dev1",
-    "tenacity==9.1.4",
+    "apscheduler==3.11.3",
+    "skale.py==8.0dev0",
+    "tenacity==9.2.1",
 ]
 [project.optional-dependencies]
-dev = ["ruff==0.15.1", "mypy==1.19.1"]
-test = [
-    "pytest==9.0.2",
-    "pytest-cov==7.0.0",
-    "freezegun==1.5.5",
-    "codecov==2.1.13",
-]
+dev = ["ruff==0.17.3", "mypy==2.4.0"]
+test = ["pytest==9.2.0", "pytest-cov==7.1.0", "freezegun==1.5.5"]
 
 [tool.pytest.ini_options]
-log_cli = false
-log_cli_level = "INFO"
-log_cli_format = "[%(asctime)s] [%(levelname)8s] [%(threadName)s] %(message)s (%(filename)s:%(lineno)s)"
-log_cli_date_format = "%Y-%m-%d %H:%M:%S"
-filterwarnings = ["ignore::DeprecationWarning"]
-
-[tool.uv]
-prerelease = "allow"
+log_level = "INFO"
 
 [tool.ruff]
 line-length = 100
+extend-exclude = ["helper-scripts"]
 
 [tool.ruff.lint]
 select = ["E", "W", "F", "I"]
@@ -43,4 +30,4 @@ warn_unused_configs = true
 ignore_missing_imports = true
 
 [tool.coverage.run]
-omit = ["tests/*", "helper-scripts/*", "venv/*", "configs/*"]
+omit = ["tests/*", "configs/*"]

@@ -1,9 +1,7 @@
 import os
 from pathlib import Path
 
-from skale.core.settings import SkaleSettings
-
-ENV = os.environ.get('ENV')
+from skale_core.settings import SkaleSettings
 
 LONG_LINE = '-' * 100
 
@@ -16,8 +14,6 @@ NODE_DATA_PATH: Path = SKALE_VOLUME_PATH / NODE_DATA_FOLDER_NAME
 NODE_CONFIG_FILENAME = 'node_config.json'
 NODE_CONFIG_FILEPATH: Path = NODE_DATA_PATH / NODE_CONFIG_FILENAME
 
-MIN_ETH_AMOUNT_IN_SKL = 0.01
-MIN_ETH_AMOUNT = int(MIN_ETH_AMOUNT_IN_SKL * (10**18))
 RETRY_INTERVAL = 60  # in seconds
 CONFIG_CHECK_PERIOD = 30  # in seconds
 MISFIRE_GRACE_TIME = 365 * 24 * 60 * 60  # in seconds
