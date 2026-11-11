@@ -177,13 +177,16 @@ class BountyAgent:
 if __name__ == '__main__':
     st = get_settings(SkaleSettings)
     init_logger(str(st.sgx_url), str(st.endpoint))
-    while True:
-        try:
-            skale = init_skale(st)
-            bounty_agent = BountyAgent(skale)
-            bounty_agent.run()
-            while not bounty_agent.is_stopped:
-                time.sleep(1)
-        except Exception as e:
-            logger.exception('Bounty agent failed with %s', e)
-            time.sleep(DELAY_AFTER_ERR)
+    try:
+        while True:
+            try:
+                skale = init_skale(st)
+                bounty_agent = BountyAgent(skale)
+                bounty_agent.run()
+                while not bounty_agent.is_stopped:
+                    time.sleep(1)
+            except Exception as e:
+                logger.exception('Bounty agent failed with %s', e)
+                time.sleep(DELAY_AFTER_ERR)
+    except KeyboardInterrupt:
+        logger.info('Bounty agent stopped')
