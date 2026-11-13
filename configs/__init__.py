@@ -5,7 +5,6 @@ from skale_core.settings import SkaleSettings
 
 LONG_LINE = '-' * 100
 
-NOTIFIER_URL = 'http://localhost:3007/send-tg-notification'
 NODE_DATA_FOLDER_NAME: str = 'node_data'
 
 SKALE_VOLUME_PATH: Path = Path(os.getenv('SKALE_VOLUME_PATH', '/skale_vol'))
