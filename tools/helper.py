@@ -19,10 +19,8 @@
 
 import json
 import logging
-from enum import Enum
 
 import redis
-import requests
 import tenacity
 from skale import SkaleManager
 from skale.utils.web3_utils import init_web3
@@ -33,7 +31,6 @@ from configs import (
     CONFIG_CHECK_PERIOD,
     DEFAULT_POOL,
     NODE_CONFIG_FILEPATH,
-    NOTIFIER_URL,
     REDIS_URI,
     SGX_CERTIFICATES_FOLDER,
 )
@@ -90,39 +87,3 @@ def read_node_config(key: str):
             logger.warning('Cannot read %s from node config - is the node already registered?', key)
             _config_first_read = False
         raise
-
-
-class MsgIcon(Enum):
-    INFO = '\u2705'
-    WARNING = '\u26a0\ufe0f'
-    ERROR = '\u203c\ufe0f'
-    BOUNTY = '\U0001f4b0'
-    CRITICAL = '\U0001f198'
-
-
-class Notifier:
-    def __init__(self, cont_name, node_name, node_id, node_ip):
-        self.header = f'Container: {cont_name}, Node: {node_name}, ID: {node_id}, IP: {node_ip}\n'
-
-    def send(self, message, icon=MsgIcon.ERROR):
-        """Send message to telegram."""
-        logger.info(message)
-        header = f'{icon.value} {self.header}'
-        message_data = {'message': [header, message]}
-        try:
-            response = requests.post(url=NOTIFIER_URL, json=message_data, timeout=10)
-        except requests.exceptions.ConnectionError:
-            logger.info(f'Cannot send Telegram notification (failed to connect to {NOTIFIER_URL})')
-            return
-        except Exception as err:
-            logger.info(f'Cannot notify validator {NOTIFIER_URL}. {err}')
-            return
-        if response.status_code != requests.codes.ok:
-            logger.info(f'Request to {NOTIFIER_URL} failed, status code: {response.status_code}')
-            return
-
-        res = response.json()
-        if res.get('status') == 'error':
-            logger.info('Telegram notifications are not supported on the node')
-            return
-        logger.debug('Message to validator was sent successfully')
