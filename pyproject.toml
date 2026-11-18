@@ -4,7 +4,7 @@ version = "3.3.0"
 requires-python = ">=3.14"
 dependencies = [
     "apscheduler==3.11.3",
-    "skale.py==8.0dev0",
+    "skale.py==8.0dev3",
     "tenacity==9.2.1",
 ]
 [project.optional-dependencies]
