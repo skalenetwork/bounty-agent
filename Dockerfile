@@ -1,21 +1,22 @@
-FROM python:3.13.9-slim-trixie AS builder
+FROM python:3.14.10-slim-trixie AS builder
 
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+COPY --from=ghcr.io/astral-sh/uv:0.13.8 /uv /usr/local/bin/uv
 
-RUN mkdir /usr/src/bounty
-WORKDIR /usr/src/bounty
+WORKDIR /app
 
 COPY pyproject.toml ./
-RUN uv pip install --prerelease=allow --system --no-cache .
+RUN uv sync --no-cache --python /usr/local/bin/python
 
-FROM python:3.13.8-slim-trixie
+FROM python:3.14.10-slim-trixie
 
-WORKDIR /usr/src/admin
+ENV PATH="/app/.venv/bin:${PATH}" \
+    PYTHONUNBUFFERED=1
 
-COPY --from=builder /usr/local/lib/python3.13/site-packages /usr/local/lib/python3.13/site-packages
-COPY --from=builder /usr/local/bin /usr/local/bin
+WORKDIR /app
+
+COPY --from=builder /app/.venv /app/.venv
 COPY . .
 
+STOPSIGNAL SIGINT
 
-ENV PYTHONPATH="/usr/src/bounty"
-CMD [ "python3", "bounty_agent.py" ]
+CMD ["python", "bounty_agent.py"]

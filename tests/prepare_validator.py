@@ -1,35 +1,17 @@
-import os
-from datetime import datetime
+from datetime import datetime, timezone
 
-from skale import SkaleManager
 from skale.utils.contracts_provision.main import add_test_permissions
-from skale.utils.helper import get_skale_manager_address
-from skale.utils.web3_utils import init_web3
-from skale.wallets import Web3Wallet
 
-from configs import NODE_DATA_PATH, SKALE_VOLUME_PATH
 from tests.constants import (
     D_VALIDATOR_DESC,
     D_VALIDATOR_FEE,
     D_VALIDATOR_ID,
     D_VALIDATOR_MIN_DEL,
     D_VALIDATOR_NAME,
-    ENDPOINT,
-    ETH_PRIVATE_KEY,
-    TEST_ABI_FILEPATH,
 )
 
 IP_BASE = '10.1.0.'
 TEST_PORT = 123
-DIR_LOG = os.path.join(NODE_DATA_PATH, 'log')
-DIR_ABI = os.path.join(SKALE_VOLUME_PATH, 'contracts_info')
-
-
-def create_dirs():
-    if not os.path.exists(DIR_LOG):
-        os.makedirs(DIR_LOG)
-    if not os.path.exists(DIR_ABI):
-        os.makedirs(DIR_ABI)
 
 
 def validator_exist(skale):
@@ -53,13 +35,13 @@ def get_block_timestamp(web3):
 
 def go_to_date(web3, date):
     block_timestamp = get_block_timestamp(web3)
-    print(f'Block timestamp before: {datetime.utcfromtimestamp(block_timestamp)}')
+    print(f'Block timestamp before: {datetime.fromtimestamp(block_timestamp, timezone.utc)}')
     delta = date - block_timestamp
 
     skip_evm_time(web3, delta)
 
     block_timestamp = get_block_timestamp(web3)
-    print(f'Block timestamp after: {datetime.utcfromtimestamp(block_timestamp)}')
+    print(f'Block timestamp after: {datetime.fromtimestamp(block_timestamp, timezone.utc)}')
 
 
 def set_test_msr(skale, msr=D_VALIDATOR_MIN_DEL):
@@ -112,20 +94,6 @@ def create_set_of_nodes(skale, first_node_id, nodes_number=2):
         print(f'Node with id = {first_node_id} is already exists! Try another start id...')
 
 
-def skip_evm_time(web3, seconds) -> int:
-    """For test purposes only, works only with ganache node"""
-    res = web3.provider.make_request('evm_increaseTime', [seconds])
+def skip_evm_time(web3, seconds):
+    web3.provider.make_request('evm_increaseTime', [seconds])
     web3.provider.make_request('evm_mine', [])
-    return res['result']
-
-
-def init_skale():
-    web3 = init_web3(ENDPOINT)
-    wallet = Web3Wallet(ETH_PRIVATE_KEY, web3)
-    manager_address = get_skale_manager_address(TEST_ABI_FILEPATH)
-    return SkaleManager(ENDPOINT, manager_address, wallet)
-
-
-if __name__ == '__main__':
-    skale = init_skale()
-    setup_validator(skale)

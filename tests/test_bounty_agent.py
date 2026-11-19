@@ -40,8 +40,8 @@ def node_id(skale):
 
 
 @pytest.fixture(scope='module')
-def bounty_collector(skale, settings, node_id):
-    return bounty_agent.BountyAgent(skale, settings, node_id)
+def bounty_collector(skale, node_id):
+    return bounty_agent.BountyAgent(skale, node_id)
 
 
 def test_check_if_node_is_registered(skale, node_id):
@@ -64,29 +64,8 @@ def test_get_bounty_neg(skale, bounty_collector):
 
 
 def get_bounty_events(skale, node_id):
-    from_block_number = skale.nodes.get(node_id)['start_block']
-    to_block_number = skale.web3.eth.block_number
-    logs = skale.manager.contract.events.BountyReceived.get_logs(
-        from_block=hex(from_block_number), to_block=hex(to_block_number)
-    )
-    bounty_events = []
-    for log in logs:
-        args = log['args']
-        tx_block_number = log['blockNumber']
-        block_data = skale.web3.eth.get_block(tx_block_number)
-        block_timestamp = datetime.fromtimestamp(block_data['timestamp'], timezone.utc)
-        bounty_events.append(
-            (
-                args['nodeIndex'],
-                args['averageLatency'],
-                args['averageDowntime'],
-                args['bounty'],
-                log['transactionHash'].hex(),
-                log['blockNumber'],
-                block_timestamp,
-            )
-        )
-    return bounty_events
+    from_block = skale.nodes.get(node_id)['start_block']
+    return skale.manager.contract.events.BountyReceived.get_logs(from_block=from_block)
 
 
 def test_bounty_job_saves_data(skale, bounty_collector):
@@ -101,8 +80,8 @@ def test_bounty_job_saves_data(skale, bounty_collector):
     assert len(bounties) == 1
 
 
-def test_run_agent(skale, settings, node_id):
-    bounty_collector = bounty_agent.BountyAgent(skale, settings, node_id)
+def test_run_agent(skale, node_id):
+    bounty_collector = bounty_agent.BountyAgent(skale, node_id)
     reward_date = skale.nodes.contract.functions.getNodeNextRewardDate(bounty_collector.id).call()
     print(f'Reward date: {reward_date}')
     go_to_date(skale.web3, reward_date + REWARD_DATE_OFFSET)
