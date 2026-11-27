@@ -23,6 +23,10 @@ from tools.logger import create_file_handler, create_stream_handler
 
 SGX_URL = 'https://10.0.0.1:1026'
 ENDPOINT = 'http://10.0.0.2:8545'
+SGX_URL_WITH_SENSITIVE_COMPONENTS = (
+    'https://qauser:qapassword1234567@192.0.2.10:1026/'
+    'qapathsegment12345678?auth=qaauthvalue123456'
+)
 
 
 def test_handlers_hide_sensitive_data(tmp_path, capsys):
@@ -40,3 +44,27 @@ def test_handlers_hide_sensitive_data(tmp_path, capsys):
         assert '[SGX_IP]' in output and '[ETH_IP]' in output and '[SGX_KEY]' in output
         assert '10.0.0.1' not in output and '10.0.0.2' not in output
         assert 'NEK:abc123' not in output
+
+
+def test_handlers_hide_sgx_url_path_and_query(tmp_path, capsys):
+    log_path = tmp_path / 'bounty-agent.log'
+    logger = logging.getLogger('test-logger-sensitive-sgx-url')
+    logger.addHandler(create_file_handler(log_path, SGX_URL_WITH_SENSITIVE_COMPONENTS, ENDPOINT))
+    logger.addHandler(create_stream_handler(SGX_URL_WITH_SENSITIVE_COMPONENTS, ENDPOINT))
+
+    try:
+        raise TimeoutError(
+            'HTTPSConnectionPool(host="192.0.2.10", port=1026): '
+            'Max retries exceeded with url: '
+            '/qapathsegment12345678?auth=qaauthvalue123456'
+        )
+    except TimeoutError:
+        logger.exception('SGX URL: %s', SGX_URL_WITH_SENSITIVE_COMPONENTS)
+
+    for output in (log_path.read_text(), capsys.readouterr().err):
+        assert '[SGX_IP]' in output
+        assert '[SGX_PATH]' in output
+        assert '[SGX_QUERY]' in output
+        assert 'qapassword1234567' not in output
+        assert 'qapathsegment12345678' not in output
+        assert 'auth=qaauthvalue123456' not in output

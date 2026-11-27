@@ -33,13 +33,20 @@ from configs.logs import (
 
 
 def compose_hiding_patterns(sgx_url, endpoint):
-    sgx_ip = urlparse(sgx_url).hostname if sgx_url else None
+    sgx = urlparse(sgx_url) if sgx_url else None
+    sgx_ip = sgx.hostname if sgx else None
     eth_ip = urlparse(endpoint).hostname if endpoint else None
     patterns = {}
     if sgx_ip:
-        patterns[rf'{sgx_ip}'] = '[SGX_IP]'
+        patterns[re.escape(sgx_ip)] = '[SGX_IP]'
+    if sgx and sgx.password:
+        patterns[re.escape(sgx.password)] = '[SGX_PASSWORD]'
+    if sgx and sgx.path and sgx.path != '/':
+        patterns[re.escape(sgx.path)] = '[SGX_PATH]'
+    if sgx and sgx.query:
+        patterns[re.escape(f'?{sgx.query}')] = '[SGX_QUERY]'
     if eth_ip:
-        patterns[rf'{eth_ip}'] = '[ETH_IP]'
+        patterns[re.escape(eth_ip)] = '[ETH_IP]'
     patterns[r'NEK\:\w+'] = '[SGX_KEY]'
     return patterns
 
