@@ -40,3 +40,36 @@ def test_handlers_hide_sensitive_data(tmp_path, capsys):
         assert '[SGX_IP]' in output and '[ETH_IP]' in output and '[SGX_KEY]' in output
         assert '10.0.0.1' not in output and '10.0.0.2' not in output
         assert 'NEK:abc123' not in output
+
+
+def test_handlers_hide_url_secrets(tmp_path, capsys):
+    sgx_url = 'https://user:sgxpassword@10.0.0.1:1026/sgxlongpathsegment?auth=sgxauthvalue1'
+    endpoint = 'https://10.0.0.2/v3/ethlongpathsegment?apikey=ethkeyvalue12'
+    log_path = tmp_path / 'bounty-agent.log'
+    logger = logging.getLogger('test-url-logger')
+    logger.addHandler(create_file_handler(log_path, sgx_url, endpoint))
+    logger.addHandler(create_stream_handler(sgx_url, endpoint))
+
+    try:
+        raise ValueError('Max retries exceeded with url: /sgxlongpathsegment?auth=sgxauthvalue1')
+    except ValueError:
+        logger.exception(
+            'Endpoint %s, bare values sgxpassword ethkeyvalue12, '
+            'foreign https://other.io/?token=foreigntoken',
+            endpoint,
+        )
+
+    secrets = (
+        'sgxpassword',
+        'sgxlongpathsegment',
+        'sgxauthvalue1',
+        'ethlongpathsegment',
+        'ethkeyvalue12',
+        'foreigntoken',
+    )
+    for output in (log_path.read_text(), capsys.readouterr().err):
+        assert not any(secret in output for secret in secrets)
+        assert 'url: /[SGX_PATH_SEGMENT]?[SGX_QUERY]' in output
+        assert 'https://[ETH_IP]/v3/[ETH_PATH_SEGMENT]?[ETH_QUERY]' in output
+        assert 'bare values [SGX_PASSWORD] [ETH_QUERY_VALUE]' in output
+        assert 'https://other.io/?token=[HIDDEN]' in output

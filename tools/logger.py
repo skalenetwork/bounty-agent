@@ -22,7 +22,7 @@ import logging.handlers as py_handlers
 import re
 import sys
 from logging import Formatter, StreamHandler
-from urllib.parse import urlparse
+from urllib.parse import parse_qsl, urlparse
 
 from configs.logs import (
     LOG_BACKUP_COUNT,
@@ -31,17 +31,41 @@ from configs.logs import (
     LOG_PATH,
 )
 
+SECRET_PATH_SEGMENT_MIN_LENGTH = 16
+SECRET_QUERY_VALUE_MIN_LENGTH = 12
+
+GENERIC_HIDING_PATTERNS = {
+    r'NEK\:\w+': '[SGX_KEY]',
+    r'(?i)([?&](?:auth|token|apikey|api_key)=)[^&\s,\'"]+': r'\1[HIDDEN]',
+}
+
+
+def compose_url_hiding_patterns(url, label):
+    patterns = {}
+    if not url:
+        return patterns
+    parsed = urlparse(url)
+    if parsed.query:
+        patterns[re.escape(parsed.query)] = f'[{label}_QUERY]'
+        for _, value in parse_qsl(parsed.query):
+            if len(value) >= SECRET_QUERY_VALUE_MIN_LENGTH:
+                patterns[re.escape(value)] = f'[{label}_QUERY_VALUE]'
+    if parsed.password:
+        patterns[re.escape(parsed.password)] = f'[{label}_PASSWORD]'
+    for segment in parsed.path.split('/'):
+        if len(segment) >= SECRET_PATH_SEGMENT_MIN_LENGTH:
+            patterns[re.escape(segment)] = f'[{label}_PATH_SEGMENT]'
+    if parsed.hostname:
+        patterns[re.escape(parsed.hostname)] = f'[{label}_IP]'
+    return patterns
+
 
 def compose_hiding_patterns(sgx_url, endpoint):
-    sgx_ip = urlparse(sgx_url).hostname if sgx_url else None
-    eth_ip = urlparse(endpoint).hostname if endpoint else None
-    patterns = {}
-    if sgx_ip:
-        patterns[rf'{sgx_ip}'] = '[SGX_IP]'
-    if eth_ip:
-        patterns[rf'{eth_ip}'] = '[ETH_IP]'
-    patterns[r'NEK\:\w+'] = '[SGX_KEY]'
-    return patterns
+    return {
+        **compose_url_hiding_patterns(sgx_url, 'SGX'),
+        **compose_url_hiding_patterns(endpoint, 'ETH'),
+        **GENERIC_HIDING_PATTERNS,
+    }
 
 
 class HidingFormatter(Formatter):
